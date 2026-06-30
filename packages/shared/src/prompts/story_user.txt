@@ -1,0 +1,26 @@
+Crie uma história personalizada com as seguintes informações reais desta criança:
+
+## Dados da criança
+- Nome: {{child_name}}
+- Idade: {{child_age}} anos
+- Descrição física (para os prompts de ilustração): {{visual_profile_raw}}
+
+## Contexto do mês
+- Momento especial que aconteceu: {{moment_text}}
+- Desafio emocional a trabalhar: {{challenge_text}}
+{{#if theme_pref}}- Preferência de tema da família: {{theme_pref}}{{/if}}
+
+## Instruções específicas
+
+A história deve:
+1. Começar com uma situação do cotidiano que a criança reconhece
+2. Incorporar o momento especial do mês de forma natural na narrativa
+3. Trabalhar o desafio emocional de forma gentil — a criança supera por conta própria
+4. Ter o nome {{child_name}} repetido naturalmente ao longo do texto
+5. Terminar com a criança se sentindo amada, capaz e segura
+
+Adapte o vocabulário e a complexidade narrativa para {{child_age}} anos conforme suas diretrizes.
+
+Lembre-se: os prompts de ilustração devem ser em inglês e NÃO devem incluir descrição física do personagem — isso será injetado automaticamente pelo sistema.
+
+Retorne apenas o JSON, sem nenhum texto adicional.

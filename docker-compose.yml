@@ -1,0 +1,39 @@
+version: "3.9"
+
+# StoryBox — ambiente local de desenvolvimento
+# Supabase roda na nuvem (supabase.com) — aqui só Redis
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Bull Board — dashboard visual das filas BullMQ
+  # Acesse: http://localhost:3002
+  bull-board:
+    image: deadly0/bull-board
+    ports:
+      - "3002:3000"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
+
+# ─────────────────────────────────────────────────────────────
+# Para subir:
+#   docker compose up -d
+#
+# Para a API e workers rodar local (sem Docker):
+#   cp .env.example .env   (preenche com suas chaves)
+#   pnpm install
+#   pnpm dev
+# ─────────────────────────────────────────────────────────────

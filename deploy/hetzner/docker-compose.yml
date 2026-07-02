@@ -31,4 +31,3 @@ volumes:
 
 networks:
   internal:
-    internal: true

@@ -17,7 +17,11 @@ export async function listBooks(filters: { status?: BookStatus; limit: number; o
 
 export async function getBookById(id: string) {
   const db = getSupabaseClient()
-  const { data, error } = await db.from('books').select('*').eq('id', id).single()
+  const { data, error } = await db
+    .from('books')
+    .select('*, monthly_collections(subscriber_id)')
+    .eq('id', id)
+    .single()
   if (error) throw error
   return data
 }

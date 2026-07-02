@@ -159,6 +159,10 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => [],
   }),
+  storyQueueIndex: Annotation<number>({
+    reducer: (_, b) => b,
+    default: () => 0,
+  }),
 })
 
 export type OnboardingState = typeof OnboardingAnnotation.State

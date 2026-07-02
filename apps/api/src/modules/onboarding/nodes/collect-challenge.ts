@@ -10,18 +10,27 @@ export async function collectChallengeNode(state: OnboardingState): Promise<Part
   const edit = await checkEditIntent(challenge, 'collect_challenge')
   if (edit) return edit
 
-  const collectionIds = await Promise.all(
-    state.featuredChildIndices.map((i) =>
-      upsertMonthlyCollection({
-        child_id:       state.childIds[i],
-        subscriber_id:  state.subscriberId!,
-        moment_text:    state.storyMoment ?? '',
-        challenge_text: challenge,
-      }),
-    ),
-  )
+  const currentIndex = state.featuredChildIndices[state.storyQueueIndex]
+  const collectionId = await upsertMonthlyCollection({
+    child_id:       state.childIds[currentIndex],
+    subscriber_id:  state.subscriberId!,
+    moment_text:    state.storyMoment ?? '',
+    challenge_text: challenge,
+  })
+  const collectionIds = [...state.collectionIds, collectionId]
+
+  const nextQueueIndex = state.storyQueueIndex + 1
+  const nextChild = state.children[state.featuredChildIndices[nextQueueIndex]]
+
+  if (nextChild) {
+    await sendText(
+      state.phone,
+      `✨ Anotado!\n\nAgora vamos falar de *${nextChild.name}*: me conta um *momento especial* dele(a) neste mês!`,
+    )
+    return { collectionIds, storyQueueIndex: nextQueueIndex, editIntent: undefined }
+  }
 
   await sendText(state.phone, '✨ Informações salvas! Já vou criar a história...')
 
-  return { collectionIds, editIntent: undefined }
+  return { collectionIds, storyQueueIndex: nextQueueIndex, editIntent: undefined }
 }

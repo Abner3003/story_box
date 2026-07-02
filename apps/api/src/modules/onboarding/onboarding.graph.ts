@@ -119,7 +119,11 @@ const graph = new StateGraph(OnboardingAnnotation)
 
   .addEdge('ask_story',            'collect_moment')
   .addConditionalEdges('collect_moment', (state) => editRoute(state) ?? 'collect_challenge')
-  .addConditionalEdges('collect_challenge', (state) => editRoute(state) ?? 'trigger_generation')
+  .addConditionalEdges('collect_challenge', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    return state.storyQueueIndex < state.featuredChildIndices.length ? 'collect_moment' : 'trigger_generation'
+  })
   .addEdge('trigger_generation',   '__end__')
 
 export const onboardingGraph = graph.compile({ checkpointer })

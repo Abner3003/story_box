@@ -134,37 +134,99 @@ export interface Database {
                 Row: Child;
                 Insert: Omit<Child, 'id' | 'created_at' | 'updated_at'>;
                 Update: Partial<Omit<Child, 'id' | 'created_at' | 'updated_at'>>;
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'children_subscriber_id_fkey';
+                        columns: ['subscriber_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscribers';
+                        referencedColumns: ['id'];
+                    }
+                ];
             };
             monthly_collections: {
                 Row: MonthlyCollection;
                 Insert: Omit<MonthlyCollection, 'id' | 'created_at' | 'updated_at'>;
                 Update: Partial<Omit<MonthlyCollection, 'id' | 'created_at' | 'updated_at'>>;
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'monthly_collections_child_id_fkey';
+                        columns: ['child_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'children';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'monthly_collections_subscriber_id_fkey';
+                        columns: ['subscriber_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscribers';
+                        referencedColumns: ['id'];
+                    }
+                ];
             };
             books: {
                 Row: Book;
                 Insert: Omit<Book, 'id' | 'created_at' | 'updated_at'>;
                 Update: Partial<Omit<Book, 'id' | 'created_at' | 'updated_at'>>;
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'books_collection_id_fkey';
+                        columns: ['collection_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'monthly_collections';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'books_child_id_fkey';
+                        columns: ['child_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'children';
+                        referencedColumns: ['id'];
+                    }
+                ];
             };
             delivery_addresses: {
                 Row: DeliveryAddress;
                 Insert: Omit<DeliveryAddress, 'id' | 'created_at'>;
                 Update: Partial<Omit<DeliveryAddress, 'id' | 'created_at'>>;
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'delivery_addresses_subscriber_id_fkey';
+                        columns: ['subscriber_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscribers';
+                        referencedColumns: ['id'];
+                    }
+                ];
             };
             agent_states: {
                 Row: AgentState;
                 Insert: Omit<AgentState, 'id'>;
                 Update: Partial<Omit<AgentState, 'id'>>;
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'agent_states_subscriber_id_fkey';
+                        columns: ['subscriber_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscribers';
+                        referencedColumns: ['id'];
+                    }
+                ];
             };
             wa_messages: {
                 Row: WaMessage;
                 Insert: Omit<WaMessage, 'id' | 'processed' | 'created_at'>;
                 Update: Partial<Omit<WaMessage, 'id' | 'processed' | 'created_at'>>;
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'wa_messages_subscriber_id_fkey';
+                        columns: ['subscriber_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscribers';
+                        referencedColumns: ['id'];
+                    }
+                ];
             };
         };
         Views: {

@@ -32,7 +32,30 @@ export const simulateRouter: FastifyPluginAsync = async (app) => {
         200: {
           type: 'object',
           properties: {
-            messages: { type: 'array', items: { type: 'object' } },
+            messages: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['type', 'to'],
+                properties: {
+                  type: { type: 'string', enum: ['text', 'video', 'buttons'] },
+                  to:   { type: 'string' },
+                  body: { type: 'string' },
+                  link: { type: 'string' },
+                  caption: { type: 'string' },
+                  buttons: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id:    { type: 'string' },
+                        title: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },

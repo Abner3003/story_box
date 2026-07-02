@@ -57,6 +57,7 @@ jobs:
         run: |
           owner="$(printf '%s' '${{ secrets.GHCR_USERNAME }}' | tr '[:upper:]' '[:lower:]')"
           echo "IMAGE_NAME=ghcr.io/${owner}/storybox-api" >> "$GITHUB_ENV"
+          echo "GHCR_OWNER=${owner}" >> "$GITHUB_ENV"
 
       - name: Prepare SSH
         shell: bash
@@ -91,7 +92,7 @@ jobs:
           PUBLIC_API_URL: ${{ secrets.PUBLIC_API_URL }}
           STORYBOX_CONSENT_URL: ${{ secrets.STORYBOX_CONSENT_URL }}
           STORYBOX_INTRO_VIDEO_URL: ${{ secrets.STORYBOX_INTRO_VIDEO_URL }}
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_USERNAME: ${{ env.GHCR_OWNER }}
           IMAGE_TAG: latest
           API_DOMAIN: ${{ vars.API_DOMAIN }}
         run: |

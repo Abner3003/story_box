@@ -155,6 +155,10 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => undefined,
   }),
+  collectionIds: Annotation<string[]>({
+    reducer: (_, b) => b,
+    default: () => [],
+  }),
 })
 
 export type OnboardingState = typeof OnboardingAnnotation.State

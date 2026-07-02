@@ -67,3 +67,35 @@ export async function saveChildVisualProfile(childId: string, profile: VisualPro
     .eq('id', childId)
   if (error) throw error
 }
+
+export async function upsertMonthlyCollection(data: {
+  child_id: string
+  subscriber_id: string
+  moment_text: string
+  challenge_text: string
+}) {
+  const db = getSupabaseClient()
+  const referenceMonth = new Date()
+  referenceMonth.setUTCDate(1)
+  const reference_month = referenceMonth.toISOString().slice(0, 10)
+
+  const { data: row, error } = await db
+    .from('monthly_collections')
+    .upsert(
+      {
+        child_id:                data.child_id,
+        subscriber_id:           data.subscriber_id,
+        reference_month,
+        moment_text:             data.moment_text,
+        challenge_text:          data.challenge_text,
+        status:                  'generating',
+        reminders_sent:          0,
+        collection_completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'child_id,reference_month' },
+    )
+    .select('id')
+    .single()
+  if (error) throw error
+  return row.id as string
+}

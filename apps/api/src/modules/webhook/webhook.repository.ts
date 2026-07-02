@@ -1,18 +1,6 @@
 import { getSupabaseClient } from '@storybox/db'
+import type { Subscriber } from '@storybox/db'
 import type { WhatsAppMessage } from './webhook.models.js'
-
-
-type Subscriber = {
-  id:string,                    
-  phone:string,             
-  email:string                  
-  full_name:string              
-  plan:string                    
-  status:string                  
-  abacatepay_customer_id:string  
-  created_at:string              
-  updated_at:string           
-}
 
 export async function findSubscriberByPhone(phone: string): Promise<Subscriber | null> {
   const db = getSupabaseClient()

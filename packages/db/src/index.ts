@@ -17,7 +17,7 @@ export type BookStatus =
   | 'rejected'         | 'delivered_digital' | 'sent_to_print'
   | 'delivered_physical'
 
-export interface Subscriber {
+export type Subscriber = {
   id: string
   phone: string                  // E.164: +5511999...
   email?: string
@@ -30,7 +30,7 @@ export interface Subscriber {
   updated_at: string
 }
 
-export interface Child {
+export type Child = {
   id: string
   subscriber_id: string
   name: string
@@ -51,7 +51,7 @@ export interface VisualProfile {
   raw_description: string        // texto completo retornado pelo GPT-4o Vision
 }
 
-export interface MonthlyCollection {
+export type MonthlyCollection = {
   id: string
   child_id: string
   subscriber_id: string
@@ -68,7 +68,7 @@ export interface MonthlyCollection {
   updated_at: string
 }
 
-export interface Book {
+export type Book = {
   id: string
   collection_id: string
   child_id: string
@@ -107,7 +107,7 @@ export interface StoryJSON {
   pages: StoryPage[]
 }
 
-export interface DeliveryAddress {
+export type DeliveryAddress = {
   id: string
   subscriber_id: string
   is_default: boolean
@@ -122,7 +122,7 @@ export interface DeliveryAddress {
   created_at: string
 }
 
-export interface AgentState {
+export type AgentState = {
   id: string
   subscriber_id: string
   thread_id: string              // LangGraph thread_id
@@ -135,7 +135,7 @@ export interface AgentState {
 export type WaMessageDirection = 'inbound' | 'outbound'
 export type WaMessageType = 'text' | 'image' | 'audio' | 'document' | 'interactive'
 
-export interface WaMessage {
+export type WaMessage = {
   id: string
   message_id: string
   subscriber_id: string
@@ -153,14 +153,53 @@ export interface WaMessage {
 export interface Database {
   public: {
     Tables: {
-      subscribers:         { Row: Subscriber;         Insert: Omit<Subscriber, 'id' | 'created_at' | 'updated_at'>                    }
-      children:            { Row: Child;              Insert: Omit<Child, 'id' | 'created_at' | 'updated_at'>                         }
-      monthly_collections: { Row: MonthlyCollection;  Insert: Omit<MonthlyCollection, 'id' | 'created_at' | 'updated_at'>             }
-      books:               { Row: Book;               Insert: Omit<Book, 'id' | 'created_at' | 'updated_at'>                          }
-      delivery_addresses:  { Row: DeliveryAddress;    Insert: Omit<DeliveryAddress, 'id' | 'created_at'>                              }
-      agent_states:        { Row: AgentState;         Insert: Omit<AgentState, 'id'>                                                  }
-      wa_messages:         { Row: WaMessage;          Insert: Omit<WaMessage, 'id' | 'processed' | 'created_at'>                      }
+      subscribers: {
+        Row: Subscriber
+        Insert: Omit<Subscriber, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Subscriber, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
+      }
+      children: {
+        Row: Child
+        Insert: Omit<Child, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Child, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
+      }
+      monthly_collections: {
+        Row: MonthlyCollection
+        Insert: Omit<MonthlyCollection, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<MonthlyCollection, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
+      }
+      books: {
+        Row: Book
+        Insert: Omit<Book, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Book, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
+      }
+      delivery_addresses: {
+        Row: DeliveryAddress
+        Insert: Omit<DeliveryAddress, 'id' | 'created_at'>
+        Update: Partial<Omit<DeliveryAddress, 'id' | 'created_at'>>
+        Relationships: []
+      }
+      agent_states: {
+        Row: AgentState
+        Insert: Omit<AgentState, 'id'>
+        Update: Partial<Omit<AgentState, 'id'>>
+        Relationships: []
+      }
+      wa_messages: {
+        Row: WaMessage
+        Insert: Omit<WaMessage, 'id' | 'processed' | 'created_at'>
+        Update: Partial<Omit<WaMessage, 'id' | 'processed' | 'created_at'>>
+        Relationships: []
+      }
     }
+    Views: { [_ in never]: never }
+    Functions: { [_ in never]: never }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
   }
 }
 

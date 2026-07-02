@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ secrets.GHCR_USERNAME }}/storybox-api
   DEPLOY_DIR: /opt/storybox
 
 jobs:
@@ -19,6 +18,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Normalize GHCR image name
+        shell: bash
+        run: |
+          owner="$(printf '%s' '${{ secrets.GHCR_USERNAME }}' | tr '[:upper:]' '[:lower:]')"
+          echo "IMAGE_NAME=ghcr.io/${owner}/storybox-api" >> "$GITHUB_ENV"
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,6 +51,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Normalize GHCR image name
+        shell: bash
+        run: |
+          owner="$(printf '%s' '${{ secrets.GHCR_USERNAME }}' | tr '[:upper:]' '[:lower:]')"
+          echo "IMAGE_NAME=ghcr.io/${owner}/storybox-api" >> "$GITHUB_ENV"
 
       - name: Prepare SSH
         shell: bash

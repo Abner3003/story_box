@@ -72,7 +72,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" "mkdir -p ${DEPLOY_DIR}"
           scp -i ~/.ssh/id_rsa deploy/hetzner/docker-compose.yml "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${DEPLOY_DIR}/docker-compose.yml"
-          scp -i ~/.ssh/id_rsa deploy/hetzner/Caddyfile "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${DEPLOY_DIR}/Caddyfile"
 
       - name: Render env file
         shell: bash

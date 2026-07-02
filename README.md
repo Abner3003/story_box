@@ -69,7 +69,7 @@ npx ngrok http 3001
 # Copia a URL https://xxxx.ngrok.io
 # Cola em Meta Developer > WhatsApp > Configuration > Webhook URL
 # Endpoint: https://xxxx.ngrok.io/webhook
-# Verify token: o mesmo que está no .env META_VERIFY_TOKEN
+# Verify token: o mesmo que está no .env WHATSAPP_VERIFY_TOKEN ou META_VERIFY_TOKEN
 ```
 
 ## Testando a geração manualmente
@@ -111,6 +111,17 @@ storybox/
 │   └── queues/       ← BullMQ filas
 └── docker-compose.yml
 ```
+
+## Deploy na Hetzner
+
+O deploy de produção está documentado em [`deploy/hetzner/README.md`](deploy/hetzner/README.md).
+
+Resumo:
+
+1. A API sobe em Docker.
+2. Redis roda no mesmo host.
+3. Caddy termina TLS e faz reverse proxy para a API.
+4. O GitHub Actions publica a imagem no GHCR e atualiza a VM via SSH.
 
 ## Fluxo de geração
 

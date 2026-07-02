@@ -2,12 +2,26 @@ import { StateGraph } from '@langchain/langgraph'
 import { OnboardingAnnotation } from './onboarding.state.js'
 import { welcomeNode } from './nodes/welcome.js'
 import { showPlansNode } from './nodes/show-plans.js'
+import { collectPlanChoiceNode } from './nodes/collect-plan-choice.js'
 import { paymentNode } from './nodes/payment.js'
-import { collectAddressNode } from './nodes/collect-address.js'
-import { collectChildrenNode } from './nodes/collect-children.js'
-import { awaitConsentNode } from './nodes/await-consent.js'
+import { collectPaymentConfirmationNode } from './nodes/collect-payment-confirmation.js'
+import { askAddressNode } from './nodes/ask-address.js'
+import { collectZipNode } from './nodes/collect-zip.js'
+import { collectNumberNode } from './nodes/collect-number.js'
+import { collectComplementNode } from './nodes/collect-complement.js'
+import { askChildrenNode } from './nodes/ask-children.js'
+import { collectChildNameNode } from './nodes/collect-child-name.js'
+import { collectChildBirthNode } from './nodes/collect-child-birth.js'
+import { collectMoreChildrenNode } from './nodes/collect-more-children.js'
+import { askChildSelectionNode } from './nodes/ask-child-selection.js'
+import { collectChildSelectionNode } from './nodes/collect-child-selection.js'
+import { askConsentNode } from './nodes/ask-consent.js'
+import { collectConsentNode } from './nodes/collect-consent.js'
+import { askPhotoNode } from './nodes/ask-photo.js'
 import { collectPhotoNode } from './nodes/collect-photo.js'
-import { collectStoryNode } from './nodes/collect-story.js'
+import { askStoryNode } from './nodes/ask-story.js'
+import { collectMomentNode } from './nodes/collect-moment.js'
+import { collectChallengeNode } from './nodes/collect-challenge.js'
 import { triggerGenerationNode } from './nodes/trigger-generation.js'
 import type { OnboardingState } from './onboarding.state.js'
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
@@ -19,39 +33,93 @@ await checkpointer.setup()
 
 
 function routeAfterPayment(state: OnboardingState) {
-  return state.plan === 'digital' ? 'collect_children' : 'collect_address'
+  return state.plan === 'digital' ? 'ask_children' : 'ask_address'
 }
 
-function routeAfterConsent(state: OnboardingState) {
-  return state.imageConsentAccepted ? 'collect_photo' : '__end__'
+function editRoute(state: OnboardingState): string | null {
+  if (state.editIntent === 'plan') return 'show_plans'
+  if (state.editIntent === 'address') return 'ask_address'
+  if (state.editIntent === 'child') return 'ask_children'
+  return null
 }
 
 const graph = new StateGraph(OnboardingAnnotation)
-  .addNode('welcome',            welcomeNode)
-  .addNode('show_plans',         showPlansNode)
-  .addNode('payment',            paymentNode)
-  .addNode('collect_address',    collectAddressNode)
-  .addNode('collect_children',   collectChildrenNode)
-  .addNode('await_consent',      awaitConsentNode)
-  .addNode('collect_photo',      collectPhotoNode)
-  .addNode('collect_story',      collectStoryNode)
-  .addNode('trigger_generation', triggerGenerationNode)
-  .addEdge('__start__',          'welcome')
-  .addEdge('welcome',            'show_plans')
-  .addEdge('show_plans',         'payment')
-  .addConditionalEdges('payment', routeAfterPayment, {
-    collect_address:  'collect_address',
-    collect_children: 'collect_children',
-  })
-  .addEdge('collect_address',    'collect_children')
-  .addEdge('collect_children',   'await_consent')
-  .addConditionalEdges('await_consent', routeAfterConsent, {
-    collect_photo: 'collect_photo',
-    __end__:       '__end__',
-  })
-  .addEdge('collect_photo',      'collect_story')
-  .addEdge('collect_story',      'trigger_generation')
-  .addEdge('trigger_generation', '__end__')
+  .addNode('welcome',                     welcomeNode)
+  .addNode('show_plans',                  showPlansNode)
+  .addNode('collect_plan_choice',         collectPlanChoiceNode)
+  .addNode('payment',                     paymentNode)
+  .addNode('collect_payment_confirmation', collectPaymentConfirmationNode)
+  .addNode('ask_address',                 askAddressNode)
+  .addNode('collect_zip',                 collectZipNode)
+  .addNode('collect_number',              collectNumberNode)
+  .addNode('collect_complement',          collectComplementNode)
+  .addNode('ask_children',                askChildrenNode)
+  .addNode('collect_child_name',          collectChildNameNode)
+  .addNode('collect_child_birth',         collectChildBirthNode)
+  .addNode('collect_more_children',       collectMoreChildrenNode)
+  .addNode('ask_child_selection',         askChildSelectionNode)
+  .addNode('collect_child_selection',     collectChildSelectionNode)
+  .addNode('ask_consent',                 askConsentNode)
+  .addNode('collect_consent',             collectConsentNode)
+  .addNode('ask_photo',                   askPhotoNode)
+  .addNode('collect_photo',               collectPhotoNode)
+  .addNode('ask_story',                   askStoryNode)
+  .addNode('collect_moment',              collectMomentNode)
+  .addNode('collect_challenge',           collectChallengeNode)
+  .addNode('trigger_generation',          triggerGenerationNode)
 
-// const checkpointer = new MemorySaver()
+  .addEdge('__start__',            'welcome')
+  .addEdge('welcome',              'show_plans')
+  .addEdge('show_plans',           'collect_plan_choice')
+  .addConditionalEdges('collect_plan_choice', (state) => state.planChoiceInvalid ? 'retry' : 'ok', {
+    retry: 'collect_plan_choice',
+    ok:    'payment',
+  })
+
+  .addConditionalEdges('payment', (state) => state.simulate ? routeAfterPayment(state) : 'collect_payment_confirmation')
+  .addConditionalEdges('collect_payment_confirmation', (state) =>
+    editRoute(state) ?? (state.paymentConfirmed ? routeAfterPayment(state) : 'collect_payment_confirmation'))
+
+  .addEdge('ask_address',          'collect_zip')
+  .addConditionalEdges('collect_zip', (state) =>
+    editRoute(state) ?? (state.zipInvalid ? 'collect_zip' : 'collect_number'))
+  .addConditionalEdges('collect_number', (state) => editRoute(state) ?? 'collect_complement')
+  .addConditionalEdges('collect_complement', (state) => editRoute(state) ?? state.returnTo ?? 'ask_children')
+
+  .addEdge('ask_children',         'collect_child_name')
+  .addConditionalEdges('collect_child_name', (state) => editRoute(state) ?? 'collect_child_birth')
+  .addConditionalEdges('collect_child_birth', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    if (state.childBirthInvalid) return 'collect_child_birth'
+    return state.childrenDone ? 'ask_child_selection' : 'collect_more_children'
+  })
+  .addConditionalEdges('collect_more_children', (state) =>
+    editRoute(state) ?? (state.childrenDone ? 'ask_child_selection' : 'collect_child_birth'))
+
+  .addConditionalEdges('ask_child_selection', (state) => state.children.length > 1 ? 'collect_child_selection' : 'ask_consent')
+  .addConditionalEdges('collect_child_selection', (state) =>
+    editRoute(state) ?? (state.childSelectionInvalid ? 'collect_child_selection' : 'ask_consent'))
+
+  .addEdge('ask_consent',          'collect_consent')
+  .addConditionalEdges('collect_consent', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    if (state.consentInvalid) return 'collect_consent'
+    return state.imageConsentAccepted ? 'ask_photo' : '__end__'
+  })
+
+  .addEdge('ask_photo',            'collect_photo')
+  .addConditionalEdges('collect_photo', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    if (state.photoInvalid) return 'collect_photo'
+    return state.photoQueueIndex < state.featuredChildIndices.length ? 'collect_photo' : 'ask_story'
+  })
+
+  .addEdge('ask_story',            'collect_moment')
+  .addConditionalEdges('collect_moment', (state) => editRoute(state) ?? 'collect_challenge')
+  .addConditionalEdges('collect_challenge', (state) => editRoute(state) ?? 'trigger_generation')
+  .addEdge('trigger_generation',   '__end__')
+
 export const onboardingGraph = graph.compile({ checkpointer })

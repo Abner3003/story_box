@@ -1,0 +1,153 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ghcr.io/${{ secrets.GHCR_USERNAME }}/storybox-api
+  DEPLOY_DIR: /opt/storybox
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.HETZNER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync deployment files
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/id_rsa "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" "mkdir -p ${DEPLOY_DIR}"
+          scp -i ~/.ssh/id_rsa deploy/hetzner/docker-compose.yml "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${DEPLOY_DIR}/docker-compose.yml"
+          scp -i ~/.ssh/id_rsa deploy/hetzner/Caddyfile "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${DEPLOY_DIR}/Caddyfile"
+
+      - name: Render env file
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ABACATEPAY_API_KEY: ${{ secrets.ABACATEPAY_API_KEY }}
+          META_PHONE_NUMBER_ID: ${{ secrets.META_PHONE_NUMBER_ID }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_API_VERSION: ${{ secrets.META_API_VERSION }}
+          WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
+          META_VERIFY_TOKEN: ${{ secrets.META_VERIFY_TOKEN }}
+          APP_URL: ${{ secrets.APP_URL }}
+          API_PUBLIC_URL: ${{ secrets.API_PUBLIC_URL }}
+          PUBLIC_API_URL: ${{ secrets.PUBLIC_API_URL }}
+          STORYBOX_CONSENT_URL: ${{ secrets.STORYBOX_CONSENT_URL }}
+          STORYBOX_INTRO_VIDEO_URL: ${{ secrets.STORYBOX_INTRO_VIDEO_URL }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          IMAGE_TAG: latest
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            DATABASE_URL
+            SUPABASE_URL
+            SUPABASE_SERVICE_ROLE_KEY
+            OPENAI_API_KEY
+            META_PHONE_NUMBER_ID
+            META_ACCESS_TOKEN
+            GHCR_USERNAME
+            API_DOMAIN
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required env var: ${name}" >&2
+              exit 1
+            fi
+          done
+
+          if [ -z "${WHATSAPP_VERIFY_TOKEN:-}" ] && [ -z "${META_VERIFY_TOKEN:-}" ]; then
+            echo "Missing required env var: WHATSAPP_VERIFY_TOKEN or META_VERIFY_TOKEN" >&2
+            exit 1
+          fi
+
+          write_env() {
+            local key="$1"
+            local value="$2"
+            if [ -n "$value" ]; then
+              printf '%s=%s\n' "$key" "$value" >> /tmp/storybox.env
+            fi
+          }
+
+          : > /tmp/storybox.env
+          write_env PORT "3001"
+          write_env NODE_ENV "production"
+          write_env REDIS_HOST "redis"
+          write_env REDIS_PORT "6379"
+          write_env DATABASE_URL "$DATABASE_URL"
+          write_env SUPABASE_URL "$SUPABASE_URL"
+          write_env SUPABASE_SERVICE_ROLE_KEY "$SUPABASE_SERVICE_ROLE_KEY"
+          write_env OPENAI_API_KEY "$OPENAI_API_KEY"
+          write_env ABACATEPAY_API_KEY "$ABACATEPAY_API_KEY"
+          write_env META_PHONE_NUMBER_ID "$META_PHONE_NUMBER_ID"
+          write_env META_ACCESS_TOKEN "$META_ACCESS_TOKEN"
+          write_env META_API_VERSION "$META_API_VERSION"
+          write_env WHATSAPP_VERIFY_TOKEN "$WHATSAPP_VERIFY_TOKEN"
+          write_env META_VERIFY_TOKEN "$META_VERIFY_TOKEN"
+          write_env APP_URL "$APP_URL"
+          write_env API_PUBLIC_URL "$API_PUBLIC_URL"
+          write_env PUBLIC_API_URL "$PUBLIC_API_URL"
+          write_env STORYBOX_CONSENT_URL "$STORYBOX_CONSENT_URL"
+          write_env STORYBOX_INTRO_VIDEO_URL "$STORYBOX_INTRO_VIDEO_URL"
+          write_env GHCR_USERNAME "$GHCR_USERNAME"
+          write_env IMAGE_TAG "$IMAGE_TAG"
+          write_env API_DOMAIN "$API_DOMAIN"
+
+          scp -i ~/.ssh/id_rsa /tmp/storybox.env "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${DEPLOY_DIR}/.env"
+
+      - name: Pull and restart
+        shell: bash
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        run: |
+          printf '%s' "$GHCR_PAT" | ssh -i ~/.ssh/id_rsa "${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}" \
+            "cd /opt/storybox && docker login ghcr.io -u '${GHCR_USERNAME}' --password-stdin && docker compose pull && docker compose up -d --remove-orphans"

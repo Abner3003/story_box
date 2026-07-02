@@ -1,36 +1,33 @@
-import { interrupt } from '@langchain/langgraph'
 import { sendText } from '../../../lib/whatsapp.js'
 import type { OnboardingState } from '../onboarding.state.js'
-import type { SubscriberPlan } from '@storybox/db'
+import { getPlans, formatPlanAmount } from '../../billing/billing.service.js'
 
-const PLANS_MESSAGE = `Escolha o plano ideal para você 👇
-
-1️⃣ *Digital* — R$ 29/mês
-   📱 Livro em PDF entregue pelo WhatsApp
-
-2️⃣ *Box* — R$ 79/mês
-   📦 Livro impresso + brinde surpresa entregue em casa
-
-3️⃣ *Family* — R$ 129/mês
-   👨‍👩‍👧‍👦 Até 3 filhos, livros impressos + brindes
-
-Digite *1*, *2* ou *3* para escolher:`
-
-const planMap: Record<string, SubscriberPlan> = {
-  '1': 'digital',
-  '2': 'box',
-  '3': 'family',
+export function formatOptionsList(count: number): string {
+  const numbers = Array.from({ length: count }, (_, i) => `*${i + 1}*`)
+  if (numbers.length === 1) return numbers[0]
+  return `${numbers.slice(0, -1).join(', ')} ou ${numbers[numbers.length - 1]}`
 }
 
 export async function showPlansNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
-  await sendText(state.phone, PLANS_MESSAGE)
+  const plans = await getPlans()
 
-  while (true) {
-    const choice = interrupt<string>('awaiting_plan_choice')
-    const plan = planMap[choice.trim()]
-
-    if (plan) return { plan }
-
-    await sendText(state.phone, '❌ Opção inválida. Digite *1*, *2* ou *3*:')
+  if (!plans.length) {
+    throw new Error('Nenhum plano retornado pelo gateway de pagamento. Verifique a configuração da sua conta.')
   }
+
+  const message = [
+    'Escolha o plano ideal para você 👇',
+    '',
+    ...plans.map((plan, index) => {
+      const amount = formatPlanAmount(plan.amount)
+      const header = `${index + 1}. *${plan.name}* - ${amount}/${plan.interval}`
+      return plan.description ? `${header}\n   ${plan.description}` : header
+    }),
+    '',
+    `Digite ${formatOptionsList(plans.length)} para escolher o plano:`,
+  ].join('\n')
+
+  await sendText(state.phone, message)
+
+  return { availablePlans: plans, planChoiceInvalid: false, editIntent: undefined }
 }

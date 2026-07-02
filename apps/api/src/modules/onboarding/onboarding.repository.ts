@@ -1,19 +1,43 @@
 import { getSupabaseClient } from '@storybox/db'
-import type { VisualProfile, SubscriberPlan } from '@storybox/db'
+import type { VisualProfile, SubscriberPlan, SubscriberStatus } from '@storybox/db'
 
-export async function createSubscriber(data: {
+export async function upsertSubscriber(data: {
   phone: string
   plan: SubscriberPlan
   full_name: string
+  abacatepay_plan_id?: string
+  status?: SubscriberStatus
 }) {
   const db = getSupabaseClient()
   const { data: row, error } = await db
     .from('subscribers')
-    .insert(data)
+    .upsert(
+      {
+        phone: data.phone,
+        plan: data.plan,
+        full_name: data.full_name,
+        status: data.status ?? 'pending_payment',
+        abacatepay_plan_id: data.abacatepay_plan_id,
+      },
+      { onConflict: 'phone' },
+    )
     .select('id')
     .single()
   if (error) throw error
   return row.id as string
+}
+
+export async function markSubscriberActiveByPhone(phone: string) {
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('subscribers')
+    .update({ status: 'active' })
+    .eq('phone', phone)
+    .select('id')
+    .maybeSingle()
+
+  if (error) throw error
+  return data?.id ?? null
 }
 
 export async function createChild(data: {

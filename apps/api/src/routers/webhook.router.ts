@@ -3,6 +3,10 @@ import type { WhatsAppWebhookPayload } from '../modules/webhook/webhook.models.j
 import { handleWhatsAppWebhook } from '../modules/webhook/webhook.service.js'
 import { metaObjectBodySchema, webhookResponseSchema } from '../schemas.js'
 
+function verifyToken() {
+  return process.env.META_VERIFY_TOKEN ?? process.env.WHATSAPP_VERIFY_TOKEN
+}
+
 export const webhookRouter: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { 'hub.mode': string; 'hub.verify_token': string; 'hub.challenge': string } }>(
     '/',
@@ -34,7 +38,7 @@ export const webhookRouter: FastifyPluginAsync = async (app) => {
       const token     = req.query['hub.verify_token']
       const challenge = req.query['hub.challenge']
 
-      if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+      if (mode === 'subscribe' && token === verifyToken()) {
         return reply.send(challenge)
       }
       return reply.status(403).send({ error: 'Forbidden' })

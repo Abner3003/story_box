@@ -1,4 +1,14 @@
-const BASE_URL = 'https://graph.facebook.com/v20.0'
+function envValue(...keys: Array<string | undefined>): string | undefined {
+  for (const key of keys) {
+    if (!key) continue
+    const value = process.env[key]
+    if (value) return value
+  }
+  return undefined
+}
+
+const META_API_VERSION = process.env.META_API_VERSION ?? 'v20.0'
+const BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`
 
 // ── Simulation interceptor ─────────────────────────────────
 export type OutboundMessage =
@@ -14,14 +24,14 @@ export function setInterceptor(fn: Interceptor | null) { _interceptor = fn }
 
 // ── Internal helpers ───────────────────────────────────────
 function phoneNumberId() {
-  const id = process.env.WHATSAPP_PHONE_NUMBER_ID
-  if (!id) throw new Error('WHATSAPP_PHONE_NUMBER_ID não configurado')
+  const id = envValue('META_PHONE_NUMBER_ID', 'WHATSAPP_PHONE_NUMBER_ID')
+  if (!id) throw new Error('META_PHONE_NUMBER_ID/WHATSAPP_PHONE_NUMBER_ID não configurado')
   return id
 }
 
 function accessToken() {
-  const token = process.env.WHATSAPP_TOKEN ?? process.env.WHATSAPP_ACCESS_TOKEN
-  if (!token) throw new Error('WHATSAPP_TOKEN não configurado')
+  const token = envValue('META_ACCESS_TOKEN', 'WHATSAPP_TOKEN', 'WHATSAPP_ACCESS_TOKEN')
+  if (!token) throw new Error('META_ACCESS_TOKEN/WHATSAPP_ACCESS_TOKEN não configurado')
   return token
 }
 

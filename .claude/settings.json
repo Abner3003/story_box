@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -I{} sh -c 'echo ===={}====; cat {}')",
+      "WebFetch(domain:abacatepay.readme.io)",
+      "WebSearch",
+      "WebFetch(domain:docs.abacatepay.com)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s https://viacep.com.br/ws/01310100/json/)",
+      "Bash(curl -s https://viacep.com.br/ws/04756000/json/)",
+      "Bash(curl -s http://localhost:3001/health)",
+      "Bash(npx --no-install tsc --noEmit -p apps/api/tsconfig.json)",
+      "Bash(curl -s -X POST http://localhost:3001/simulate/message -H 'Content-Type: application/json' -d '{ *)"
+    ]
+  }
+}

@@ -8,9 +8,10 @@ CREATE TABLE subscribers (
   phone                   TEXT NOT NULL UNIQUE,
   email                   TEXT,
   full_name               TEXT NOT NULL,
-  plan                    TEXT NOT NULL CHECK (plan IN ('digital','box','family')),
-  status                  TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','cancelled')),
+  plan                    TEXT NOT NULL, -- nome/slug do produto cadastrado na AbacatePay (dinâmico)
+  status                  TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','cancelled','pending_payment')),
   abacatepay_customer_id  TEXT,
+  abacatepay_plan_id      TEXT,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );

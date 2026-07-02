@@ -4,8 +4,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 // Tipos do banco — espelham as tabelas do Supabase
 // ─────────────────────────────────────────────
 
-export type SubscriberStatus = 'active' | 'paused' | 'cancelled'
-export type SubscriberPlan   = 'digital' | 'box' | 'family'
+export type SubscriberStatus = 'active' | 'paused' | 'cancelled' | 'pending_payment'
+export type SubscriberPlan   = string // nome/slug do produto cadastrado na AbacatePay
 
 export type CollectionStatus =
   | 'collecting' | 'ready' | 'generating'
@@ -25,6 +25,7 @@ export interface Subscriber {
   plan: SubscriberPlan
   status: SubscriberStatus
   abacatepay_customer_id?: string
+  abacatepay_plan_id?: string
   created_at: string
   updated_at: string
 }

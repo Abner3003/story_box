@@ -5,6 +5,7 @@ import swaggerUi from '@fastify/swagger-ui'
 import 'dotenv/config'
 
 import { webhookRouter }  from './routers/webhook.router.js'
+import { billingRouter }  from './routers/billing.router.js'
 import { adminRouter }    from './routers/admin.router.js'
 import { paymentRouter }  from './routers/payment.router.js'
 import { consentRouter }  from './routers/consent.router.js'
@@ -14,7 +15,6 @@ const app = Fastify({
   logger: true,
   ajv: { customOptions: { keywords: ['example'] } },
 })
-console.log('teste git')
 await app.register(cors, { origin: true })
 
 await app.register(swagger, {
@@ -27,6 +27,7 @@ await app.register(swagger, {
     tags: [
       { name: 'Health' },
       { name: 'Webhook' },
+      { name: 'Billing' },
       { name: 'Admin' },
       { name: 'Payment' },
       { name: 'Consent' },
@@ -40,6 +41,7 @@ await app.register(swaggerUi, {
 })
 
 await app.register(webhookRouter,  { prefix: '/webhook'  })
+await app.register(billingRouter,  { prefix: '/billing'  })
 await app.register(adminRouter,    { prefix: '/admin'    })
 await app.register(paymentRouter,  { prefix: '/payment'  })
 await app.register(consentRouter,  { prefix: '/consent'  })

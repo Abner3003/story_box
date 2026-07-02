@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export type SubscriberStatus = 'active' | 'paused' | 'cancelled';
-export type SubscriberPlan = 'digital' | 'box' | 'family';
+export type SubscriberStatus = 'active' | 'paused' | 'cancelled' | 'pending_payment';
+export type SubscriberPlan = string;
 export type CollectionStatus = 'collecting' | 'ready' | 'generating' | 'review' | 'approved' | 'delivered' | 'skipped';
 export type BookStatus = 'pending' | 'generating_text' | 'generating_images' | 'assembling' | 'ready_for_review' | 'approved' | 'rejected' | 'delivered_digital' | 'sent_to_print' | 'delivered_physical';
 export interface Subscriber {
@@ -11,6 +11,7 @@ export interface Subscriber {
     plan: SubscriberPlan;
     status: SubscriberStatus;
     abacatepay_customer_id?: string;
+    abacatepay_plan_id?: string;
     created_at: string;
     updated_at: string;
 }

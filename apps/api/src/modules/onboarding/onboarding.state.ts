@@ -201,6 +201,14 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => undefined,
   }),
+  momentPhotoPath: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  momentPhotoInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
   collectionIds: Annotation<string[]>({
     reducer: (_, b) => b,
     default: () => [],

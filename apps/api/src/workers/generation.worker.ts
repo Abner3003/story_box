@@ -13,6 +13,8 @@ import {
 import { generateStory, calculateAge } from '../lib/story.js'
 import { generateImage } from '../lib/illustration.js'
 import { assembleBookPdf } from '../lib/pdf.js'
+import { describeMomentScene } from '../lib/vision.js'
+import { downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
 
 interface GenerateBookJobData {
   subscriberId: string
@@ -43,11 +45,22 @@ const worker = new Worker<GenerateBookJobData>(
     const styleId = visualProfile.chosen_style ?? 'watercolor'
     const childAge = calculateAge(child.birth_date)
 
+    let momentText = collection.moment_text ?? ''
+    if (collection.photo_storage_path) {
+      try {
+        const { base64, mimeType } = await downloadChildPhoto(collection.photo_storage_path)
+        const sceneDescription = await describeMomentScene(base64, mimeType)
+        if (sceneDescription) momentText = `${momentText}\n\nCena da foto enviada: ${sceneDescription}`
+      } catch (err) {
+        console.error(`[generation] falha ao descrever a foto do momento (coleção ${collectionId}):`, err)
+      }
+    }
+
     const story = await generateStory({
       childName: child.name,
       childAge,
       visualProfileRaw: visualProfile.raw_description,
-      momentText: collection.moment_text ?? '',
+      momentText,
       challengeText: collection.challenge_text ?? '',
       themePref: collection.theme_pref,
     })

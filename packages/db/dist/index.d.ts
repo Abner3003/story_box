@@ -250,6 +250,7 @@ export interface Database {
 export declare function getSupabaseClient(): SupabaseClient<Database>;
 export declare const StoragePaths: {
     readonly childPhoto: (childId: string, month: string) => string;
+    readonly momentPhoto: (childId: string, period: string) => string;
     readonly stylePreview: (childId: string, styleId: string) => string;
     readonly bookPdf: (bookId: string) => string;
     readonly bookCover: (bookId: string) => string;

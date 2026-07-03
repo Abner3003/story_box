@@ -12,10 +12,11 @@ export async function collectChallengeNode(state: OnboardingState): Promise<Part
 
   const currentIndex = state.featuredChildIndices[state.storyQueueIndex]
   const collectionId = await upsertMonthlyCollection({
-    child_id:       state.childIds[currentIndex],
-    subscriber_id:  state.subscriberId!,
-    moment_text:    state.storyMoment ?? '',
-    challenge_text: challenge,
+    child_id:            state.childIds[currentIndex],
+    subscriber_id:       state.subscriberId!,
+    moment_text:         state.storyMoment ?? '',
+    challenge_text:      challenge,
+    photo_storage_path:  state.momentPhotoPath,
   })
   const collectionIds = [...state.collectionIds, collectionId]
 
@@ -25,9 +26,9 @@ export async function collectChallengeNode(state: OnboardingState): Promise<Part
   if (nextChild) {
     await sendText(
       state.phone,
-      `✨ Anotado!\n\nAgora vamos falar de *${nextChild.name}*: me conta um *momento especial* dele(a) neste mês!`,
+      `✨ Anotado!\n\nAgora vamos falar de *${nextChild.name}*: você tem alguma *foto* de um momento especial dele(a) neste mês? Se tiver, me manda! Se não, digite *não*.`,
     )
-    return { collectionIds, storyQueueIndex: nextQueueIndex, editIntent: undefined }
+    return { collectionIds, storyQueueIndex: nextQueueIndex, momentPhotoPath: undefined, editIntent: undefined }
   }
 
   await sendText(state.phone, '✨ Informações salvas! Já vou criar a história...')

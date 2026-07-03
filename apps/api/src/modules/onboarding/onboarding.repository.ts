@@ -131,6 +131,19 @@ export async function uploadChildPhoto(childId: string, base64: string, mimeType
   return path
 }
 
+export async function uploadMomentPhoto(childId: string, base64: string, mimeType: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = StoragePaths.momentPhoto(childId, currentWeekStart())
+  const buffer = Buffer.from(base64, 'base64')
+
+  const { error } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true })
+  if (error) throw error
+
+  return path
+}
+
 export async function downloadChildPhoto(path: string): Promise<{ base64: string; mimeType: string }> {
   const db = getSupabaseClient()
   const { data, error } = await db.storage.from(ASSETS_BUCKET).download(path)
@@ -191,6 +204,7 @@ export async function upsertMonthlyCollection(data: {
   subscriber_id: string
   moment_text: string
   challenge_text: string
+  photo_storage_path?: string
 }) {
   const db = getSupabaseClient()
   const reference_month = currentWeekStart()
@@ -204,6 +218,7 @@ export async function upsertMonthlyCollection(data: {
         reference_month,
         moment_text:             data.moment_text,
         challenge_text:          data.challenge_text,
+        photo_storage_path:      data.photo_storage_path,
         status:                  'generating',
         reminders_sent:          0,
         collection_completed_at: new Date().toISOString(),

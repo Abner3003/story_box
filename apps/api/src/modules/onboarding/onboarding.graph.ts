@@ -26,6 +26,7 @@ import { collectPhotoNode } from './nodes/collect-photo.js'
 import { askStyleChoiceNode } from './nodes/ask-style-choice.js'
 import { collectStyleChoiceNode } from './nodes/collect-style-choice.js'
 import { askStoryNode } from './nodes/ask-story.js'
+import { collectMomentPhotoNode } from './nodes/collect-moment-photo.js'
 import { collectMomentNode } from './nodes/collect-moment.js'
 import { collectChallengeNode } from './nodes/collect-challenge.js'
 import { triggerGenerationNode } from './nodes/trigger-generation.js'
@@ -70,6 +71,7 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('ask_style_choice',            askStyleChoiceNode)
   .addNode('collect_style_choice',        collectStyleChoiceNode)
   .addNode('ask_story',                   askStoryNode)
+  .addNode('collect_moment_photo',        collectMomentPhotoNode)
   .addNode('collect_moment',              collectMomentNode)
   .addNode('collect_challenge',           collectChallengeNode)
   .addNode('trigger_generation',          triggerGenerationNode)
@@ -139,12 +141,17 @@ const graph = new StateGraph(OnboardingAnnotation)
     return state.photoQueueIndex < state.featuredChildIndices.length ? 'collect_photo' : 'ask_story'
   })
 
-  .addEdge('ask_story',            'collect_moment')
+  .addEdge('ask_story',            'collect_moment_photo')
+  .addConditionalEdges('collect_moment_photo', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    return state.momentPhotoInvalid ? 'collect_moment_photo' : 'collect_moment'
+  })
   .addConditionalEdges('collect_moment', (state) => editRoute(state) ?? 'collect_challenge')
   .addConditionalEdges('collect_challenge', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
-    return state.storyQueueIndex < state.featuredChildIndices.length ? 'collect_moment' : 'trigger_generation'
+    return state.storyQueueIndex < state.featuredChildIndices.length ? 'collect_moment_photo' : 'trigger_generation'
   })
   .addEdge('trigger_generation',   '__end__')
 

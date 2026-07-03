@@ -298,6 +298,7 @@ export function getSupabaseClient(): SupabaseClient<Database> {
 
 export const StoragePaths = {
   childPhoto:      (childId: string, month: string) => `children/${childId}/photos/${month}.jpg`,
+  momentPhoto:     (childId: string, period: string) => `children/${childId}/moments/${period}.jpg`,
   stylePreview:    (childId: string, styleId: string) => `children/${childId}/style-previews/${styleId}.png`,
   bookPdf:         (bookId: string)                 => `books/${bookId}/book.pdf`,
   bookCover:       (bookId: string)                 => `books/${bookId}/cover.png`,

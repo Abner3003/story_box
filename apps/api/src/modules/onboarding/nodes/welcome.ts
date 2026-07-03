@@ -10,7 +10,7 @@ export async function welcomeNode(state: OnboardingState): Promise<Partial<Onboa
 
   await sendText(
     state.phone,
-    `Olá! 👋 Sou a assistente do *Storybox* 📚✨\n\nCriamos livros infantis personalizados com o seu filho como personagem principal — com a carinha, o cabelo e o jeitinho dele!\n\nVou te mostrar nossos planos agora...`,
+    `Olá! 👋 Sou a assistente do *Storybox* 📚✨\n\nCriamos livros infantis personalizados com o seu filho como personagem principal — com a carinha, o cabelo e o jeitinho dele!\n\nAntes de começar, qual é o seu nome?`,
   )
 
   return {}

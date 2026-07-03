@@ -40,7 +40,7 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
 
     const usesButtons = plans.length <= MAX_NATIVE_BUTTONS
     const parts = [
-      isFirst ? 'Escolha o plano ideal para você 👇\n' : undefined,
+      isFirst ? `Escolha o plano ideal para você, ${state.subscriberName} 👇\n` : undefined,
       `*${index + 1}. ${plan.name}* — ${priceLine}`,
       isLast && !usesButtons ? `\nDigite ${formatOptionsList(plans.length)} para escolher o plano:` : undefined,
     ]

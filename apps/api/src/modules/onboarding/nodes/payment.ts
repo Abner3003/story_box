@@ -52,7 +52,7 @@ export async function paymentNode(state: OnboardingState): Promise<Partial<Onboa
 
   await sendText(
     state.phone,
-    `Seu plano foi selecionado 🚀\nFinalize aqui:\n${url}\n\nAssim que o pagamento for confirmado eu te aviso por aqui.`,
+    `${state.subscriberName}, seu plano foi selecionado 🚀\nFinalize aqui:\n${url}\n\nAssim que o pagamento for confirmado eu te aviso por aqui.`,
   )
 
   return { paymentLink: url, paymentConfirmed: false }

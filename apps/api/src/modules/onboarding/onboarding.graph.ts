@@ -1,6 +1,7 @@
 import { StateGraph } from '@langchain/langgraph'
 import { OnboardingAnnotation } from './onboarding.state.js'
 import { welcomeNode } from './nodes/welcome.js'
+import { collectNameNode } from './nodes/collect-name.js'
 import { askPurchaseTypeNode } from './nodes/ask-purchase-type.js'
 import { collectPurchaseTypeNode } from './nodes/collect-purchase-type.js'
 import { showPlansNode } from './nodes/show-plans.js'
@@ -46,6 +47,7 @@ function editRoute(state: OnboardingState): string | null {
 
 const graph = new StateGraph(OnboardingAnnotation)
   .addNode('welcome',                     welcomeNode)
+  .addNode('collect_name',                collectNameNode)
   .addNode('ask_purchase_type',           askPurchaseTypeNode)
   .addNode('collect_purchase_type',       collectPurchaseTypeNode)
   .addNode('show_plans',                  showPlansNode)
@@ -77,7 +79,8 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('trigger_generation',          triggerGenerationNode)
 
   .addEdge('__start__',            'welcome')
-  .addEdge('welcome',              'ask_purchase_type')
+  .addEdge('welcome',              'collect_name')
+  .addEdge('collect_name',         'ask_purchase_type')
   .addEdge('ask_purchase_type',    'collect_purchase_type')
   .addConditionalEdges('collect_purchase_type', (state) => state.purchaseTypeInvalid ? 'retry' : 'ok', {
     retry: 'collect_purchase_type',

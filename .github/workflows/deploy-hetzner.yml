@@ -81,6 +81,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ABACATEPAY_API_KEY: ${{ secrets.ABACATEPAY_API_KEY }}
+          ABACATEPAY_WEBHOOK_SECRET: ${{ secrets.ABACATEPAY_WEBHOOK_SECRET }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
           META_PHONE_NUMBER_ID: ${{ secrets.META_PHONE_NUMBER_ID }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_API_VERSION: ${{ secrets.META_API_VERSION }}
@@ -91,6 +93,7 @@ jobs:
           PUBLIC_API_URL: ${{ secrets.PUBLIC_API_URL }}
           STORYBOX_CONSENT_URL: ${{ secrets.STORYBOX_CONSENT_URL }}
           STORYBOX_INTRO_VIDEO_URL: ${{ secrets.STORYBOX_INTRO_VIDEO_URL }}
+          WHATSAPP_WEEKLY_TEMPLATE_NAME: ${{ secrets.WHATSAPP_WEEKLY_TEMPLATE_NAME }}
           GHCR_USERNAME: ${{ env.GHCR_OWNER }}
           IMAGE_TAG: latest
           API_DOMAIN: ${{ vars.API_DOMAIN }}
@@ -138,6 +141,8 @@ jobs:
           write_env SUPABASE_SERVICE_ROLE_KEY "$SUPABASE_SERVICE_ROLE_KEY"
           write_env OPENAI_API_KEY "$OPENAI_API_KEY"
           write_env ABACATEPAY_API_KEY "$ABACATEPAY_API_KEY"
+          write_env ABACATEPAY_WEBHOOK_SECRET "$ABACATEPAY_WEBHOOK_SECRET"
+          write_env ADMIN_API_KEY "$ADMIN_API_KEY"
           write_env META_PHONE_NUMBER_ID "$META_PHONE_NUMBER_ID"
           write_env META_ACCESS_TOKEN "$META_ACCESS_TOKEN"
           write_env META_API_VERSION "$META_API_VERSION"
@@ -148,6 +153,7 @@ jobs:
           write_env PUBLIC_API_URL "$PUBLIC_API_URL"
           write_env STORYBOX_CONSENT_URL "$STORYBOX_CONSENT_URL"
           write_env STORYBOX_INTRO_VIDEO_URL "$STORYBOX_INTRO_VIDEO_URL"
+          write_env WHATSAPP_WEEKLY_TEMPLATE_NAME "$WHATSAPP_WEEKLY_TEMPLATE_NAME"
           write_env GHCR_USERNAME "$GHCR_USERNAME"
           write_env IMAGE_TAG "$IMAGE_TAG"
           write_env API_DOMAIN "$API_DOMAIN"

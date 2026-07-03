@@ -1,6 +1,18 @@
 import 'dotenv/config'
 import { Worker } from 'bullmq'
 import { connection } from '@storybox/queues'
+import { buildIllustrationPrompt, buildCoverPrompt } from '@storybox/shared'
+import {
+  getCollectionForGeneration,
+  findBookByCollectionId,
+  createBook,
+  updateBook,
+  uploadBookAsset,
+  StoragePaths,
+} from '../modules/generation/generation.repository.js'
+import { generateStory, calculateAge } from '../lib/story.js'
+import { generateImage } from '../lib/illustration.js'
+import { assembleBookPdf } from '../lib/pdf.js'
 
 interface GenerateBookJobData {
   subscriberId: string
@@ -8,13 +20,81 @@ interface GenerateBookJobData {
   collectionId: string
 }
 
+const DONE_STATUSES = new Set(['ready_for_review', 'approved', 'rejected', 'delivered_digital', 'sent_to_print', 'delivered_physical'])
+
 const worker = new Worker<GenerateBookJobData>(
   'book-generation',
   async (job) => {
-    const { subscriberId, childId, collectionId } = job.data
-    // TODO: gerar texto (OpenAI) + imagens, montar PDF, salvar em `books` e
-    // enfileirar em deliveryQueue quando pronto.
-    console.log(`[generation] processando subscriber=${subscriberId} child=${childId} collection=${collectionId}`)
+    const { childId, collectionId } = job.data
+
+    const existingBook = await findBookByCollectionId(collectionId)
+    if (existingBook && DONE_STATUSES.has(existingBook.status)) {
+      console.log(`[generation] coleção ${collectionId} já concluída (livro ${existingBook.id}), pulando`)
+      return
+    }
+    const book = existingBook ?? await createBook({ collection_id: collectionId, child_id: childId, status: 'generating_text' })
+
+    const { collection, child } = await getCollectionForGeneration(collectionId)
+    const visualProfile = child.visual_profile
+    if (!visualProfile) {
+      throw new Error(`Criança ${childId} sem visual_profile — foto ainda não foi processada`)
+    }
+
+    const styleId = visualProfile.chosen_style ?? 'watercolor'
+    const childAge = calculateAge(child.birth_date)
+
+    const story = await generateStory({
+      childName: child.name,
+      childAge,
+      visualProfileRaw: visualProfile.raw_description,
+      momentText: collection.moment_text ?? '',
+      challengeText: collection.challenge_text ?? '',
+      themePref: collection.theme_pref,
+    })
+
+    await updateBook(book.id, {
+      title: story.title,
+      moral: story.moral,
+      story_json: story,
+      status: 'generating_images',
+      llm_model: 'gpt-4o',
+    })
+
+    const pagesWithImages = await Promise.all(
+      story.pages.map(async (page) => {
+        const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId)
+        const base64 = await generateImage(prompt)
+        const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
+        return { page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') }
+      }),
+    )
+
+    const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId)
+    const coverBase64 = await generateImage(coverPrompt)
+    const coverPath = await uploadBookAsset(StoragePaths.bookCover(book.id), coverBase64, 'image/png')
+    const coverImageBuffer = Buffer.from(coverBase64, 'base64')
+
+    await updateBook(book.id, {
+      story_json: { ...story, pages: pagesWithImages.map((p) => p.page) },
+      cover_image_storage_path: coverPath,
+      status: 'assembling',
+      image_model: 'gpt-image-1',
+    })
+
+    const pdfBuffer = await assembleBookPdf({
+      title: story.title,
+      coverImageBuffer,
+      pages: pagesWithImages.map(({ page, imageBuffer }) => ({ page, imageBuffer })),
+    })
+    const pdfPath = await uploadBookAsset(StoragePaths.bookPdf(book.id), pdfBuffer, 'application/pdf')
+
+    await updateBook(book.id, {
+      pdf_storage_path: pdfPath,
+      status: 'ready_for_review',
+      generation_completed_at: new Date().toISOString(),
+    })
+
+    console.log(`[generation] livro ${book.id} pronto para curadoria (coleção ${collectionId})`)
   },
   { connection },
 )

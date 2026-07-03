@@ -39,7 +39,7 @@ export async function collectStyleChoiceNode(state: OnboardingState): Promise<Pa
 
   const currentIndex = state.featuredChildIndices[state.photoQueueIndex]
   const currentChildId = state.childIds[currentIndex]
-  if (currentChildId) await saveChildStyleChoice(currentChildId, selected.label)
+  if (currentChildId) await saveChildStyleChoice(currentChildId, selected.id)
 
   return advance(state)
 }

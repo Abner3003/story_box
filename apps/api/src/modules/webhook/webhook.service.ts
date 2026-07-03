@@ -21,9 +21,11 @@ export async function handleWhatsAppWebhook(
         const phone = `+${msg.from}`
         const content = msg.type === 'text'
           ? (msg.text?.body ?? '')
-          : msg.type === 'image' && msg.image?.id
-            ? `[image:${msg.image.id}]`
-            : `[${msg.type}]`
+          : msg.type === 'interactive' && msg.interactive?.button_reply
+            ? msg.interactive.button_reply.id
+            : msg.type === 'image' && msg.image?.id
+              ? `[image:${msg.image.id}]`
+              : `[${msg.type}]`
 
         if (await isOnboarding(phone, { simulate: opts.simulate })) {
           await resumeOnboarding(phone, content, { simulate: opts.simulate })

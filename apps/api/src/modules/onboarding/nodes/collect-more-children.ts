@@ -1,7 +1,10 @@
 import { interrupt } from '@langchain/langgraph'
 import { sendText } from '../../../lib/whatsapp.js'
+import { describeNameMeaning } from '../../../lib/name-meaning.js'
 import { checkEditIntent } from '../edit-intent.js'
 import type { OnboardingState } from '../onboarding.state.js'
+
+const FALLBACK_INTRO = 'Que nome lindo! 💛'
 
 export async function collectMoreChildrenNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
   const raw = interrupt<string>(`awaiting_more_children_${state.children.length}`)
@@ -16,6 +19,13 @@ export async function collectMoreChildrenNode(state: OnboardingState): Promise<P
     return { childrenDone: true, editIntent: undefined }
   }
 
-  await sendText(state.phone, `Qual a *data de nascimento* de ${trimmed}? (DD/MM/AAAA)`)
+  let intro = FALLBACK_INTRO
+  try {
+    intro = await describeNameMeaning(trimmed)
+  } catch {
+    intro = FALLBACK_INTRO
+  }
+
+  await sendText(state.phone, `${intro}\n\nQual a *data de nascimento* de ${trimmed}? (DD/MM/AAAA)`)
   return { childDraftName: trimmed, childrenDone: false, editIntent: undefined }
 }

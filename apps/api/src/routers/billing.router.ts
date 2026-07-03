@@ -34,10 +34,12 @@ export const billingRouter: FastifyPluginAsync = async (app) => {
   app.post<{
     Body: {
       planId: string
+      isRecurring: boolean
       customer: {
         name: string
         email?: string
         phone: string
+        taxId?: string
       }
     }
   }>('/checkout', {
@@ -48,17 +50,19 @@ export const billingRouter: FastifyPluginAsync = async (app) => {
         type: 'object',
         properties: {
           planId: { type: 'string' },
+          isRecurring: { type: 'boolean' },
           customer: {
             type: 'object',
             properties: {
               name: { type: 'string' },
               email: { type: 'string' },
               phone: { type: 'string' },
+              taxId: { type: 'string' },
             },
             required: ['name', 'phone'],
           },
         },
-        required: ['planId', 'customer'],
+        required: ['planId', 'isRecurring', 'customer'],
       },
       response: {
         200: {
@@ -71,6 +75,7 @@ export const billingRouter: FastifyPluginAsync = async (app) => {
   }, async (req) => {
     const checkout = await createCheckout({
       planId: req.body.planId,
+      isRecurring: req.body.isRecurring,
       customer: req.body.customer,
     })
 

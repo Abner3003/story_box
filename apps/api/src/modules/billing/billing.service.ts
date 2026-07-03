@@ -85,11 +85,34 @@ export async function getPlans(): Promise<AbacatePayPlan[]> {
   )
 }
 
-export async function createCheckout(input: CreateCheckoutInput): Promise<{ checkout_url: string }> {
-  const payload = await requestAbacatePay('/subscriptions/create', {
+async function getOrCreateCustomer(customer: CreateCheckoutInput['customer']): Promise<string | null> {
+  if (!customer.email) return null
+
+  const payload = await requestAbacatePay('/customers/create', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: customer.email,
+      name: customer.name,
+      cellphone: customer.phone,
+      taxId: customer.taxId,
+    }),
+  })
+
+  return (payload as { data?: { id?: string } } | null)?.data?.id ?? null
+}
+
+export async function createCheckout(input: CreateCheckoutInput): Promise<{ checkout_url: string; customerId: string | null }> {
+  const customerId = await getOrCreateCustomer(input.customer)
+
+  // Assinaturas só aceitam CARD e exigem produto com ciclo definido;
+  // compras avulsas usam o checkout comum (PIX + CARD).
+  const endpoint = input.isRecurring ? '/subscriptions/create' : '/checkouts/create'
+
+  const payload = await requestAbacatePay(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       items: [{ id: input.planId, quantity: 1 }],
+      ...(customerId ? { customerId } : {}),
       metadata: {
         phone: input.customer.phone,
         name: input.customer.name,
@@ -105,7 +128,7 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<{ chec
     throw new Error('Resposta inválida da AbacatePay ao criar checkout')
   }
 
-  return { checkout_url: url }
+  return { checkout_url: url, customerId }
 }
 
 export function formatPlanAmount(amount: number): string {

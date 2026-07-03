@@ -16,6 +16,7 @@ export type OutboundMessage =
   | { type: 'video';   to: string; link: string; caption?: string }
   | { type: 'image';   to: string; link: string; caption?: string }
   | { type: 'buttons'; to: string; body: string; buttons: Array<{ id: string; title: string }> }
+  | { type: 'template'; to: string; name: string; languageCode: string; components?: unknown[] }
 
 type Interceptor = (msg: OutboundMessage) => void
 
@@ -99,6 +100,26 @@ export async function showTypingIndicator(incomingMessageId: string): Promise<vo
     status: 'read',
     message_id: incomingMessageId,
     typing_indicator: { type: 'text' },
+  })
+}
+
+// Mensagem pró-ativa fora da janela de 24h — exige um Message Template já
+// aprovado pela Meta no WhatsApp Manager (não dá pra criar/aprovar por código).
+export async function sendTemplate(
+  to: string,
+  name: string,
+  languageCode = 'pt_BR',
+  components?: unknown[],
+): Promise<void> {
+  if (_interceptor) { _interceptor({ type: 'template', to, name, languageCode, components }); return }
+  await post({
+    to,
+    type: 'template',
+    template: {
+      name,
+      language: { code: languageCode },
+      ...(components ? { components } : {}),
+    },
   })
 }
 

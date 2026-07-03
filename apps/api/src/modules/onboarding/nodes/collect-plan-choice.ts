@@ -19,14 +19,18 @@ export async function collectPlanChoiceNode(state: OnboardingState): Promise<Par
     plan: selectedPlan.name,
     full_name: state.subscriberName || state.phone,
     abacatepay_plan_id: selectedPlan.id,
+    is_recurring: selectedPlan.isRecurring,
     status: 'pending_payment',
   })
+
+  await sendText(state.phone, 'Antes de gerar o pagamento, preciso do seu *e-mail*:')
 
   return {
     plan: selectedPlan.name,
     subscriberId,
     abacatepayPlanId: selectedPlan.id,
     abacatepayPlanName: selectedPlan.name,
+    planIsRecurring: selectedPlan.isRecurring,
     planChoiceInvalid: false,
   }
 }

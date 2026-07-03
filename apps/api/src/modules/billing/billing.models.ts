@@ -24,10 +24,12 @@ export interface BillingCustomer {
   name: string
   email?: string
   phone: string
+  taxId?: string
 }
 
 export interface CreateCheckoutInput {
   planId: string
+  isRecurring: boolean
   customer: BillingCustomer
   metadata?: Record<string, string>
 }

@@ -7,11 +7,14 @@ CREATE TABLE subscribers (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   phone                   TEXT NOT NULL UNIQUE,
   email                   TEXT,
+  cpf                     TEXT,
   full_name               TEXT NOT NULL,
   plan                    TEXT NOT NULL, -- nome/slug do produto cadastrado na AbacatePay (dinâmico)
   status                  TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','cancelled','pending_payment')),
   abacatepay_customer_id  TEXT,
   abacatepay_plan_id      TEXT,
+  is_recurring            BOOLEAN NOT NULL DEFAULT false, -- assinatura (true) vs livro avulso (false)
+  last_weekly_kickoff_sent_at TIMESTAMPTZ, -- último convite semanal de coleta enviado (assinantes)
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );

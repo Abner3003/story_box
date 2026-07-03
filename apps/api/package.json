@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "worker:generation": "tsx watch src/workers/generation.worker.ts",
+    "worker:scheduler": "tsx watch src/workers/scheduler.worker.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

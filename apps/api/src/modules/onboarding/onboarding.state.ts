@@ -78,12 +78,44 @@ export const OnboardingAnnotation = Annotation.Root({
     default: () => undefined,
   }),
 
+  // ── Tipo de compra (livro único vs assinatura) ────────────
+  purchaseType: Annotation<'one_time' | 'subscription' | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  purchaseTypeInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
+
   // ── Escolha de plano ──────────────────────────────────────
   availablePlans: Annotation<AbacatePayPlan[]>({
     reducer: (_, b) => b,
     default: () => [],
   }),
   planChoiceInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
+  planIsRecurring: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
+
+  // ── Dados de cobrança ──────────────────────────────────────
+  subscriberEmail: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  emailInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
+  subscriberCpf: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  cpfInvalid: Annotation<boolean>({
     reducer: (_, b) => b,
     default: () => false,
   }),

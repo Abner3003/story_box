@@ -7,11 +7,14 @@ export type Subscriber = {
     id: string;
     phone: string;
     email?: string;
+    cpf?: string;
     full_name: string;
     plan: SubscriberPlan;
     status: SubscriberStatus;
     abacatepay_customer_id?: string;
     abacatepay_plan_id?: string;
+    is_recurring: boolean;
+    last_weekly_kickoff_sent_at?: string;
     created_at: string;
     updated_at: string;
 };

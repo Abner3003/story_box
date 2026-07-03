@@ -1,6 +1,7 @@
 import type { WhatsAppWebhookPayload } from './webhook.models.js'
 import { findSubscriberByPhone, logInboundMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
+import { resumeWeeklyCollection, isInWeeklyCollection } from '../onboarding/weekly-collection.service.js'
 import { showTypingIndicator } from '../../lib/whatsapp.js'
 
 export async function handleWhatsAppWebhook(
@@ -26,6 +27,11 @@ export async function handleWhatsAppWebhook(
 
         if (await isOnboarding(phone, { simulate: opts.simulate })) {
           await resumeOnboarding(phone, content, { simulate: opts.simulate })
+          continue
+        }
+
+        if (await isInWeeklyCollection(phone)) {
+          await resumeWeeklyCollection(phone, content)
           continue
         }
 

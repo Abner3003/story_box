@@ -15,10 +15,13 @@ export function formatOptionsList(count: number): string {
 }
 
 export async function showPlansNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
-  const plans = await getPlans()
+  const wantsRecurring = state.purchaseType === 'subscription'
+  const plans = (await getPlans()).filter((plan) => plan.isRecurring === wantsRecurring)
 
   if (!plans.length) {
-    throw new Error('Nenhum plano retornado pelo gateway de pagamento. Verifique a configuração da sua conta.')
+    throw new Error(
+      `Nenhum plano ${wantsRecurring ? 'de assinatura' : 'avulso'} cadastrado na AbacatePay. Verifique a configuração da sua conta.`,
+    )
   }
 
   for (const [index, plan] of plans.entries()) {

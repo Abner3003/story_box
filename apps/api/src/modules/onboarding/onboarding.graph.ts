@@ -1,8 +1,12 @@
 import { StateGraph } from '@langchain/langgraph'
 import { OnboardingAnnotation } from './onboarding.state.js'
 import { welcomeNode } from './nodes/welcome.js'
+import { askPurchaseTypeNode } from './nodes/ask-purchase-type.js'
+import { collectPurchaseTypeNode } from './nodes/collect-purchase-type.js'
 import { showPlansNode } from './nodes/show-plans.js'
 import { collectPlanChoiceNode } from './nodes/collect-plan-choice.js'
+import { collectEmailNode } from './nodes/collect-email.js'
+import { collectCpfNode } from './nodes/collect-cpf.js'
 import { paymentNode } from './nodes/payment.js'
 import { collectPaymentConfirmationNode } from './nodes/collect-payment-confirmation.js'
 import { askAddressNode } from './nodes/ask-address.js'
@@ -26,13 +30,7 @@ import { collectMomentNode } from './nodes/collect-moment.js'
 import { collectChallengeNode } from './nodes/collect-challenge.js'
 import { triggerGenerationNode } from './nodes/trigger-generation.js'
 import type { OnboardingState } from './onboarding.state.js'
-import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
-
-
-const databaseUrl = process.env.DATABASE_URL!
-const checkpointer = PostgresSaver.fromConnString(databaseUrl)
-await checkpointer.setup()
-
+import { checkpointer } from './checkpointer.js'
 
 function routeAfterPayment(state: OnboardingState) {
   return state.plan === 'digital' ? 'ask_children' : 'ask_address'
@@ -47,8 +45,12 @@ function editRoute(state: OnboardingState): string | null {
 
 const graph = new StateGraph(OnboardingAnnotation)
   .addNode('welcome',                     welcomeNode)
+  .addNode('ask_purchase_type',           askPurchaseTypeNode)
+  .addNode('collect_purchase_type',       collectPurchaseTypeNode)
   .addNode('show_plans',                  showPlansNode)
   .addNode('collect_plan_choice',         collectPlanChoiceNode)
+  .addNode('collect_email',               collectEmailNode)
+  .addNode('collect_cpf',                 collectCpfNode)
   .addNode('payment',                     paymentNode)
   .addNode('collect_payment_confirmation', collectPaymentConfirmationNode)
   .addNode('ask_address',                 askAddressNode)
@@ -73,12 +75,21 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('trigger_generation',          triggerGenerationNode)
 
   .addEdge('__start__',            'welcome')
-  .addEdge('welcome',              'show_plans')
+  .addEdge('welcome',              'ask_purchase_type')
+  .addEdge('ask_purchase_type',    'collect_purchase_type')
+  .addConditionalEdges('collect_purchase_type', (state) => state.purchaseTypeInvalid ? 'retry' : 'ok', {
+    retry: 'collect_purchase_type',
+    ok:    'show_plans',
+  })
   .addEdge('show_plans',           'collect_plan_choice')
   .addConditionalEdges('collect_plan_choice', (state) => state.planChoiceInvalid ? 'retry' : 'ok', {
     retry: 'collect_plan_choice',
-    ok:    'payment',
+    ok:    'collect_email',
   })
+  .addConditionalEdges('collect_email', (state) =>
+    editRoute(state) ?? (state.emailInvalid ? 'collect_email' : 'collect_cpf'))
+  .addConditionalEdges('collect_cpf', (state) =>
+    editRoute(state) ?? (state.cpfInvalid ? 'collect_cpf' : 'payment'))
 
   .addConditionalEdges('payment', (state) => state.simulate ? routeAfterPayment(state) : 'collect_payment_confirmation')
   .addConditionalEdges('collect_payment_confirmation', (state) =>

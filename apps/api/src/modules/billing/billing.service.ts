@@ -86,28 +86,26 @@ export async function getPlans(): Promise<AbacatePayPlan[]> {
 }
 
 export async function createCheckout(input: CreateCheckoutInput): Promise<{ checkout_url: string }> {
-  const payload = await requestAbacatePay('/subscriptions/checkout', {
+  const payload = await requestAbacatePay('/subscriptions/create', {
     method: 'POST',
     body: JSON.stringify({
-      plan_id: input.planId,
-      customer: {
-        name: input.customer.name,
-        email: input.customer.email,
-        cellphone: input.customer.phone,
-      },
+      items: [{ id: input.planId, quantity: 1 }],
       metadata: {
         phone: input.customer.phone,
+        name: input.customer.name,
+        email: input.customer.email,
         planId: input.planId,
         ...input.metadata,
       },
     }),
   })
 
-  if (!payload || typeof payload !== 'object' || typeof (payload as { checkout_url?: unknown }).checkout_url !== 'string') {
+  const url = (payload as { data?: { url?: string } } | null)?.data?.url
+  if (!url) {
     throw new Error('Resposta inválida da AbacatePay ao criar checkout')
   }
 
-  return { checkout_url: (payload as { checkout_url: string }).checkout_url }
+  return { checkout_url: url }
 }
 
 export function formatPlanAmount(amount: number): string {

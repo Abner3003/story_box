@@ -1,16 +1,27 @@
 import { interrupt } from '@langchain/langgraph'
-import { sendText } from '../../../lib/whatsapp.js'
+import { sendButtons, sendText } from '../../../lib/whatsapp.js'
 import type { OnboardingState } from '../onboarding.state.js'
 import { upsertSubscriber } from '../onboarding.repository.js'
-import { formatOptionsList } from './show-plans.js'
+import { formatOptionsList, buildPlanButtons } from './show-plans.js'
+
+const MAX_NATIVE_BUTTONS = 3
+
+function parsePlanChoice(raw: string): number {
+  const buttonMatch = /^plan_choice_(\d+)$/.exec(raw)
+  if (buttonMatch) return Number.parseInt(buttonMatch[1], 10)
+  return Number.parseInt(raw, 10) - 1
+}
 
 export async function collectPlanChoiceNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
   const choice = interrupt<string>('awaiting_plan_choice')
-  const index = Number.parseInt(choice.trim(), 10) - 1
+  const index = parsePlanChoice(choice.trim())
   const selectedPlan = state.availablePlans[index]
 
   if (!selectedPlan) {
-    await sendText(state.phone, `❌ Opção inválida. Digite ${formatOptionsList(state.availablePlans.length)}:`)
+    await sendText(state.phone, `❌ Opção inválida. Escolha ${formatOptionsList(state.availablePlans.length)}:`)
+    if (state.availablePlans.length <= MAX_NATIVE_BUTTONS) {
+      await sendButtons(state.phone, 'Escolha uma opção:', buildPlanButtons(state.availablePlans.length))
+    }
     return { planChoiceInvalid: true }
   }
 

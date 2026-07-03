@@ -1,5 +1,5 @@
 import type { WhatsAppWebhookPayload } from './webhook.models.js'
-import { findSubscriberByPhone, logInboundMessage } from './webhook.repository.js'
+import { findSubscriberByPhone, claimMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
 import { resumeWeeklyCollection, isInWeeklyCollection } from '../onboarding/weekly-collection.service.js'
 import { showTypingIndicator } from '../../lib/whatsapp.js'
@@ -16,8 +16,6 @@ export async function handleWhatsAppWebhook(
       const contactName = change.value.contacts?.[0]?.profile?.name ?? ''
 
       for (const msg of messages) {
-        await showTypingIndicator(msg.id).catch(() => {})
-
         const phone = `+${msg.from}`
         const content = msg.type === 'text'
           ? (msg.text?.body ?? '')
@@ -26,6 +24,19 @@ export async function handleWhatsAppWebhook(
             : msg.type === 'image' && msg.image?.id
               ? `[image:${msg.image.id}]`
               : `[${msg.type}]`
+
+        // A Meta reentrega o mesmo webhook se demorarmos pra responder (ex:
+        // geração de imagem/estilo é lenta) — sem isso, a reentrega reprocessa
+        // a mesma foto/mensagem em paralelo e corrompe o fluxo do LangGraph.
+        if (!opts.simulate) {
+          const isNew = await claimMessage({ message_id: msg.id, type: msg.type, content })
+          if (!isNew) {
+            console.log(`[webhook] mensagem ${msg.id} já processada, ignorando reentrega`)
+            continue
+          }
+        }
+
+        await showTypingIndicator(msg.id).catch(() => {})
 
         if (await isOnboarding(phone, { simulate: opts.simulate })) {
           await resumeOnboarding(phone, content, { simulate: opts.simulate })
@@ -43,14 +54,6 @@ export async function handleWhatsAppWebhook(
           await startOnboarding(phone, { simulate: opts.simulate, name: contactName })
           continue
         }
-
-        await logInboundMessage({
-          subscriber_id: subscriber.id,
-          message_id:    msg.id,
-          direction:     'inbound',
-          type:          msg.type,
-          content,
-        })
 
         // TODO: enfileirar no inboundQueue para o agente LangGraph processar
       }

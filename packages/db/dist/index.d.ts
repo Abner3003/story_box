@@ -118,7 +118,7 @@ export type WaMessageType = 'text' | 'image' | 'audio' | 'document' | 'interacti
 export type WaMessage = {
     id: string;
     message_id: string;
-    subscriber_id: string;
+    subscriber_id?: string;
     direction: WaMessageDirection;
     type: WaMessageType;
     content: string;

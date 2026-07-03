@@ -29,8 +29,9 @@ export async function collectStyleChoiceNode(state: OnboardingState): Promise<Pa
   const edit = await checkEditIntent(choice, 'collect_style_choice')
   if (edit) return edit
 
-  const index = Number.parseInt(choice.trim(), 10) - 1
-  const selected = state.styleOptions[index]
+  const trimmed = choice.trim()
+  const index = Number.parseInt(trimmed, 10) - 1
+  const selected = state.styleOptions[index] ?? state.styleOptions.find((opt) => opt.id === trimmed)
 
   if (!selected) {
     await sendText(state.phone, `❌ Opção inválida. Digite ${formatOptionsList(state.styleOptions.length)}:`)

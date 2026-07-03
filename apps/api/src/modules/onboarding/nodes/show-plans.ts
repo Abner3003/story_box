@@ -1,8 +1,16 @@
-import { sendText, sendImage } from '../../../lib/whatsapp.js'
+import { sendText, sendImage, sendButtons } from '../../../lib/whatsapp.js'
 import type { OnboardingState } from '../onboarding.state.js'
 import { getPlans, formatPlanAmount } from '../../billing/billing.service.js'
 
 const INTER_MESSAGE_DELAY_MS = 1200
+const MAX_NATIVE_BUTTONS = 3
+
+export function buildPlanButtons(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `plan_choice_${index}`,
+    title: `Opção ${index + 1}`,
+  }))
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -30,10 +38,11 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
     const isFirst = index === 0
     const isLast = index === plans.length - 1
 
+    const usesButtons = plans.length <= MAX_NATIVE_BUTTONS
     const parts = [
       isFirst ? 'Escolha o plano ideal para você 👇\n' : undefined,
       `*${index + 1}. ${plan.name}* — ${priceLine}`,
-      isLast ? `\nDigite ${formatOptionsList(plans.length)} para escolher o plano:` : undefined,
+      isLast && !usesButtons ? `\nDigite ${formatOptionsList(plans.length)} para escolher o plano:` : undefined,
     ]
     const caption = parts.filter(Boolean).join('\n\n')
 
@@ -44,6 +53,10 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
     }
 
     if (!isLast) await sleep(INTER_MESSAGE_DELAY_MS)
+  }
+
+  if (plans.length <= MAX_NATIVE_BUTTONS) {
+    await sendButtons(state.phone, 'Escolha uma opção:', buildPlanButtons(plans.length))
   }
 
   return { availablePlans: plans, planChoiceInvalid: false, editIntent: undefined }

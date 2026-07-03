@@ -1,10 +1,11 @@
-import { sendText, sendImage } from '../../../lib/whatsapp.js'
+import { sendText, sendImage, sendButtons } from '../../../lib/whatsapp.js'
 import { generateAllStylePreviews } from '../../../lib/style-preview.js'
 import { downloadChildPhoto, uploadStylePreview } from '../onboarding.repository.js'
 import { formatOptionsList } from './show-plans.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
 const INTER_MESSAGE_DELAY_MS = 1200
+const MAX_NATIVE_BUTTONS = 6
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -34,10 +35,18 @@ export async function askStyleChoiceNode(state: OnboardingState): Promise<Partia
       if (index < previews.length - 1) await sleep(INTER_MESSAGE_DELAY_MS)
     }
 
-    await sendText(
-      state.phone,
-      `Qual estilo você mais gostou pra *${childName}*? Digite ${formatOptionsList(styleOptions.length)}:`,
-    )
+    if (styleOptions.length <= MAX_NATIVE_BUTTONS) {
+      await sendButtons(
+        state.phone,
+        `Qual estilo você mais gostou pra *${childName}*?`,
+        styleOptions.map((opt) => ({ id: opt.id, title: opt.label })),
+      )
+    } else {
+      await sendText(
+        state.phone,
+        `Qual estilo você mais gostou pra *${childName}*? Digite ${formatOptionsList(styleOptions.length)}:`,
+      )
+    }
 
     return { styleOptions, styleChoiceInvalid: false }
   } catch {

@@ -38,7 +38,7 @@ export const simulateRouter: FastifyPluginAsync = async (app) => {
                 type: 'object',
                 required: ['type', 'to'],
                 properties: {
-                  type: { type: 'string', enum: ['text', 'video', 'buttons'] },
+                  type: { type: 'string', enum: ['text', 'video', 'image', 'buttons'] },
                   to:   { type: 'string' },
                   body: { type: 'string' },
                   link: { type: 'string' },
@@ -114,7 +114,7 @@ export const simulateRouter: FastifyPluginAsync = async (app) => {
                 type: 'object',
                 required: ['type', 'to'],
                 properties: {
-                  type: { type: 'string', enum: ['text', 'video', 'buttons'] },
+                  type: { type: 'string', enum: ['text', 'video', 'image', 'buttons'] },
                   to:   { type: 'string' },
                   body: { type: 'string' },
                   link: { type: 'string' },

@@ -14,6 +14,7 @@ const BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`
 export type OutboundMessage =
   | { type: 'text';    to: string; body: string }
   | { type: 'video';   to: string; link: string; caption?: string }
+  | { type: 'image';   to: string; link: string; caption?: string }
   | { type: 'buttons'; to: string; body: string; buttons: Array<{ id: string; title: string }> }
 
 type Interceptor = (msg: OutboundMessage) => void
@@ -83,6 +84,11 @@ export async function sendText(to: string, body: string): Promise<void> {
 export async function sendVideo(to: string, link: string, caption?: string): Promise<void> {
   if (_interceptor) { _interceptor({ type: 'video', to, link, caption }); return }
   await post({ to, type: 'video', video: { link, caption } })
+}
+
+export async function sendImage(to: string, link: string, caption?: string): Promise<void> {
+  if (_interceptor) { _interceptor({ type: 'image', to, link, caption }); return }
+  await post({ to, type: 'image', image: { link, caption } })
 }
 
 export async function sendButtons(

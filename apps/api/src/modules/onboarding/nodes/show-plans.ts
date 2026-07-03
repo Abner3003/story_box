@@ -1,4 +1,4 @@
-import { sendText } from '../../../lib/whatsapp.js'
+import { sendText, sendImage } from '../../../lib/whatsapp.js'
 import type { OnboardingState } from '../onboarding.state.js'
 import { getPlans, formatPlanAmount } from '../../billing/billing.service.js'
 
@@ -15,19 +15,22 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
     throw new Error('Nenhum plano retornado pelo gateway de pagamento. Verifique a configuração da sua conta.')
   }
 
-  const message = [
-    'Escolha o plano ideal para você 👇',
-    '',
-    ...plans.map((plan, index) => {
-      const amount = formatPlanAmount(plan.amount)
-      const header = `${index + 1}. *${plan.name}* - ${amount}/${plan.interval}`
-      return plan.description ? `${header}\n   ${plan.description}` : header
-    }),
-    '',
-    `Digite ${formatOptionsList(plans.length)} para escolher o plano:`,
-  ].join('\n')
+  await sendText(state.phone, 'Escolha o plano ideal para você 👇')
 
-  await sendText(state.phone, message)
+  for (const [index, plan] of plans.entries()) {
+    const amount = formatPlanAmount(plan.amount)
+    const caption = [`*${index + 1}. ${plan.name}* — ${amount}/${plan.interval}`, plan.description]
+      .filter(Boolean)
+      .join('\n\n')
+
+    if (plan.imageUrl) {
+      await sendImage(state.phone, plan.imageUrl, caption)
+    } else {
+      await sendText(state.phone, caption)
+    }
+  }
+
+  await sendText(state.phone, `Digite ${formatOptionsList(plans.length)} para escolher o plano:`)
 
   return { availablePlans: plans, planChoiceInvalid: false, editIntent: undefined }
 }

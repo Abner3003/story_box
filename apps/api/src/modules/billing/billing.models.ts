@@ -4,6 +4,7 @@ export interface AbacatePayPlan {
   description?: string
   amount: number
   interval: string
+  imageUrl?: string | null
 }
 
 export interface AbacatePayProduct {
@@ -15,6 +16,7 @@ export interface AbacatePayProduct {
   currency?: string
   cycle: string | null
   status: string
+  imageUrl?: string | null
 }
 
 export interface BillingCustomer {

@@ -59,6 +59,7 @@ export async function getPlans(): Promise<AbacatePayPlan[]> {
       description: product.description,
       amount: product.price,
       interval: CYCLE_LABELS[product.cycle as string] ?? (product.cycle as string).toLowerCase(),
+      imageUrl: product.imageUrl,
     }))
 }
 

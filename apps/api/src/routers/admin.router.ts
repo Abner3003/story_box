@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
-import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery } from '../modules/admin/admin.models.js'
-import { getBooksPage, reviewBook, getCollectionsPage } from '../modules/admin/admin.service.js'
+import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery, RegenerateBookBody } from '../modules/admin/admin.models.js'
+import { getBooksPage, reviewBook, getCollectionsPage, regenerateBook } from '../modules/admin/admin.service.js'
 
 const paginationQuerystring = {
   type: 'object',
@@ -12,6 +12,16 @@ const paginationQuerystring = {
 } as const
 
 export const adminRouter: FastifyPluginAsync = async (app) => {
+  app.addHook('preHandler', async (req, reply) => {
+    const apiKey = process.env.ADMIN_API_KEY
+    if (!apiKey) {
+      return reply.status(500).send({ error: 'ADMIN_API_KEY não configurado' })
+    }
+    if (req.headers['x-admin-key'] !== apiKey) {
+      return reply.status(401).send({ error: 'Unauthorized' })
+    }
+  })
+
   app.get<{ Querystring: ListBooksQuery }>('/books', {
     schema: {
       tags: ['Admin'],
@@ -54,6 +64,38 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   }, async (req, reply) => {
     await reviewBook(req.params.id, req.body)
     return reply.status(200).send({ status: 'ok' })
+  })
+
+  app.post<{ Params: { id: string }; Body: RegenerateBookBody }>('/books/:id/regenerate', {
+    schema: {
+      tags: ['Admin'],
+      summary: 'Reenfileira a regeração de páginas de um livro (ou do livro inteiro, se nenhuma página for informada)',
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+      },
+      body: {
+        type: 'object',
+        properties: {
+          pageNumbers: { type: 'array', items: { type: 'integer', minimum: 1 } },
+          notes:       { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            status:      { type: 'string', example: 'ok' },
+            pagesQueued: { type: 'integer' },
+          },
+          required: ['status', 'pagesQueued'],
+        },
+      },
+    },
+  }, async (req, reply) => {
+    const { pagesQueued } = await regenerateBook(req.params.id, req.body)
+    return reply.status(200).send({ status: 'ok', pagesQueued })
   })
 
   app.get<{ Querystring: ListCollectionsQuery }>('/collections', {

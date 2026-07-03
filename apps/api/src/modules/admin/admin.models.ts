@@ -17,3 +17,8 @@ export interface ListCollectionsQuery {
   page?: number
   limit?: number
 }
+
+export interface RegenerateBookBody {
+  pageNumbers?: number[]
+  notes?: string
+}

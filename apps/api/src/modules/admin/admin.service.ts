@@ -1,5 +1,6 @@
-import { deliveryQueue } from '@storybox/queues'
-import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery } from './admin.models.js'
+import { deliveryQueue, regenQueue } from '@storybox/queues'
+import type { StoryJSON } from '@storybox/db'
+import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery, RegenerateBookBody } from './admin.models.js'
 import { listBooks, getBookById, updateBookStatus, listCollections } from './admin.repository.js'
 
 const DEFAULT_LIMIT = 20
@@ -30,6 +31,26 @@ export async function reviewBook(bookId: string, body: ReviewBookBody) {
       subscriberId: book.monthly_collections?.subscriber_id,
     })
   }
+}
+
+export async function regenerateBook(bookId: string, body: RegenerateBookBody) {
+  const book = await getBookById(bookId)
+  if (!book) throw new Error('Book not found')
+
+  const allPages = (book.story_json as StoryJSON | null)?.pages ?? []
+  const pageNumbers = body.pageNumbers?.length ? body.pageNumbers : allPages.map((page) => page.page_number)
+
+  if (!pageNumbers.length) throw new Error('Livro não tem páginas para regerar')
+
+  await Promise.all(
+    pageNumbers.map((pageNumber) =>
+      regenQueue.add('regenerate-page', { bookId, pageNumber, notes: body.notes }),
+    ),
+  )
+
+  await updateBookStatus(bookId, { status: 'generating_images' })
+
+  return { pagesQueued: pageNumbers.length }
 }
 
 export async function getCollectionsPage(query: ListCollectionsQuery) {

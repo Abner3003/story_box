@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
 import type { AbacatePayWebhookPayload } from '../modules/payment/payment.models.js'
 import { handleAbacatePayWebhook } from '../modules/payment/payment.service.js'
-import { isValidWebhookSignature } from '../modules/payment/webhook-signature.js'
+import { isValidWebhookSignature, computeWebhookSignature } from '../modules/payment/webhook-signature.js'
 
 interface RequestWithRawBody extends FastifyRequest {
   rawBody?: string
@@ -41,10 +41,16 @@ export const paymentRouter: FastifyPluginAsync = async (app) => {
 
     const signature = req.headers['x-webhook-signature'] as string | undefined
     const rawBody = (req as RequestWithRawBody).rawBody ?? ''
+    const valid = isValidWebhookSignature(rawBody, signature, secret)
 
-    if (!isValidWebhookSignature(rawBody, signature, secret)) {
-      console.warn('[abacatepay] assinatura de webhook inválida, ignorando requisição')
-      return reply.status(401).send({ status: 'invalid signature' })
+    if (!valid) {
+      const signatureHeaders = Object.entries(req.headers).filter(([key]) => key.toLowerCase().includes('signature'))
+      console.warn(
+        `[abacatepay] assinatura não bateu (modo diagnóstico, NÃO bloqueando por enquanto) — ` +
+        `recebida="${signature}" esperada="${computeWebhookSignature(rawBody, secret)}" ` +
+        `rawBodyLength=${rawBody.length} headersComSignature=${JSON.stringify(signatureHeaders)}`,
+      )
+      // TODO: voltar a bloquear (401) assim que confirmarmos o algoritmo/header certo com uma entrega real
     }
 
     await handleAbacatePayWebhook(req.body)

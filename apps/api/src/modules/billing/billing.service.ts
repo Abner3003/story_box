@@ -32,6 +32,10 @@ async function requestAbacatePay(path: string, init: RequestInit = {}) {
     throw new Error('ABACATEPAY_API_KEY is obrigatória')
   }
 
+  if (init.body) {
+    console.log(`[abacatepay] → ${init.method ?? 'GET'} ${path}`, init.body)
+  }
+
   const response = await fetch(`${ABACATEPAY_BASE_URL}${path}`, {
     ...init,
     headers: {
@@ -85,6 +89,14 @@ export async function getPlans(): Promise<AbacatePayPlan[]> {
   )
 }
 
+// state.phone chega em E.164 (+5511981725391) — a AbacatePay espera o
+// telefone no formato local (DDD + número, sem código do país), senão o
+// formulário deles lê os 2 primeiros dígitos como DDD e quebra a validação.
+function toLocalCellphone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  return digits.startsWith('55') && digits.length > 11 ? digits.slice(2) : digits
+}
+
 async function getOrCreateCustomer(customer: CreateCheckoutInput['customer']): Promise<string | null> {
   if (!customer.email) return null
 
@@ -93,7 +105,7 @@ async function getOrCreateCustomer(customer: CreateCheckoutInput['customer']): P
     body: JSON.stringify({
       email: customer.email,
       name: customer.name,
-      cellphone: customer.phone,
+      cellphone: toLocalCellphone(customer.phone),
       taxId: customer.taxId,
     }),
   })

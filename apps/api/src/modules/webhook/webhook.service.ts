@@ -1,6 +1,7 @@
 import type { WhatsAppWebhookPayload } from './webhook.models.js'
 import { findSubscriberByPhone, logInboundMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
+import { showTypingIndicator } from '../../lib/whatsapp.js'
 
 export async function handleWhatsAppWebhook(
   payload: WhatsAppWebhookPayload,
@@ -14,6 +15,8 @@ export async function handleWhatsAppWebhook(
       const contactName = change.value.contacts?.[0]?.profile?.name ?? ''
 
       for (const msg of messages) {
+        await showTypingIndicator(msg.id).catch(() => {})
+
         const phone = `+${msg.from}`
         const content = msg.type === 'text'
           ? (msg.text?.body ?? '')

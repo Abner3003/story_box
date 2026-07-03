@@ -1,6 +1,22 @@
+import { getSupabaseClient } from '@storybox/db'
 import type { AbacatePayPlan, AbacatePayProduct, CreateCheckoutInput } from './billing.models.js'
 
 const ABACATEPAY_BASE_URL = 'https://api.abacatepay.com/v2'
+const PLAN_IMAGES_BUCKET = 'storybox-assets'
+const PLAN_IMAGE_SIGNED_URL_TTL = 60 * 60 * 24 * 7 // 7 dias
+
+async function getPlanImageUrl(productId: string): Promise<string | null> {
+  try {
+    const db = getSupabaseClient()
+    const { data, error } = await db.storage
+      .from(PLAN_IMAGES_BUCKET)
+      .createSignedUrl(`${productId}.png`, PLAN_IMAGE_SIGNED_URL_TTL)
+    if (error || !data) return null
+    return data.signedUrl
+  } catch {
+    return null
+  }
+}
 
 const CYCLE_LABELS: Record<string, string> = {
   WEEKLY: 'semana',
@@ -50,17 +66,18 @@ function normalizeProducts(payload: unknown): AbacatePayProduct[] {
 export async function getPlans(): Promise<AbacatePayPlan[]> {
   const payload = await requestAbacatePay('/products/list', { method: 'GET' })
   const products = normalizeProducts(payload)
+  const activeProducts = products.filter((product) => product.status === 'ACTIVE' && product.cycle)
 
-  return products
-    .filter((product) => product.status === 'ACTIVE' && product.cycle)
-    .map((product) => ({
+  return Promise.all(
+    activeProducts.map(async (product) => ({
       id: product.id,
       name: product.name,
       description: product.description,
       amount: product.price,
       interval: CYCLE_LABELS[product.cycle as string] ?? (product.cycle as string).toLowerCase(),
-      imageUrl: product.imageUrl,
-    }))
+      imageUrl: await getPlanImageUrl(product.id),
+    })),
+  )
 }
 
 export async function createCheckout(input: CreateCheckoutInput): Promise<{ checkout_url: string }> {

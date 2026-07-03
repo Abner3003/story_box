@@ -91,6 +91,17 @@ export async function sendImage(to: string, link: string, caption?: string): Pro
   await post({ to, type: 'image', image: { link, caption } })
 }
 
+// Marca a mensagem recebida como lida e mostra "digitando..." até a próxima
+// resposta ser enviada (ou 25s, o que vier primeiro). Não existe no fluxo de simulação.
+export async function showTypingIndicator(incomingMessageId: string): Promise<void> {
+  if (_interceptor) return
+  await post({
+    status: 'read',
+    message_id: incomingMessageId,
+    typing_indicator: { type: 'text' },
+  })
+}
+
 export async function sendButtons(
   to: string,
   body: string,

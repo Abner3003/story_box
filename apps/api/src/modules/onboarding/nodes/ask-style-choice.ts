@@ -36,6 +36,9 @@ export async function askStyleChoiceNode(state: OnboardingState): Promise<Partia
     }
 
     if (styleOptions.length <= MAX_NATIVE_BUTTONS) {
+      // dá tempo da última imagem (busca de URL externa pela Meta) ser
+      // entregue antes do botão, senão o botão pode chegar primeiro
+      await sleep(INTER_MESSAGE_DELAY_MS)
       await sendButtons(
         state.phone,
         `Qual estilo você mais gostou pra *${childName}*?`,

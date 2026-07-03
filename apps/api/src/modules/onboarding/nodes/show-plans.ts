@@ -56,6 +56,9 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
   }
 
   if (plans.length <= MAX_NATIVE_BUTTONS) {
+    // dá tempo da última imagem (busca de URL externa pela Meta) ser entregue
+    // antes do botão, senão o botão pode chegar primeiro no celular
+    await sleep(INTER_MESSAGE_DELAY_MS)
     await sendButtons(state.phone, 'Escolha uma opção:', buildPlanButtons(plans.length))
   }
 

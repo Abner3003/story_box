@@ -18,6 +18,9 @@ COPY packages/db/src packages/db/src
 COPY packages/queues/package.json packages/queues/package.json
 COPY packages/queues/tsconfig.json packages/queues/tsconfig.json
 COPY packages/queues/src packages/queues/src
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/shared/tsconfig.json packages/shared/tsconfig.json
+COPY packages/shared/src packages/shared/src
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm build

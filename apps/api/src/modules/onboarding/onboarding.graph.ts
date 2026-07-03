@@ -19,6 +19,8 @@ import { askConsentNode } from './nodes/ask-consent.js'
 import { collectConsentNode } from './nodes/collect-consent.js'
 import { askPhotoNode } from './nodes/ask-photo.js'
 import { collectPhotoNode } from './nodes/collect-photo.js'
+import { askStyleChoiceNode } from './nodes/ask-style-choice.js'
+import { collectStyleChoiceNode } from './nodes/collect-style-choice.js'
 import { askStoryNode } from './nodes/ask-story.js'
 import { collectMomentNode } from './nodes/collect-moment.js'
 import { collectChallengeNode } from './nodes/collect-challenge.js'
@@ -63,6 +65,8 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('collect_consent',             collectConsentNode)
   .addNode('ask_photo',                   askPhotoNode)
   .addNode('collect_photo',               collectPhotoNode)
+  .addNode('ask_style_choice',            askStyleChoiceNode)
+  .addNode('collect_style_choice',        collectStyleChoiceNode)
   .addNode('ask_story',                   askStoryNode)
   .addNode('collect_moment',              collectMomentNode)
   .addNode('collect_challenge',           collectChallengeNode)
@@ -113,7 +117,14 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addConditionalEdges('collect_photo', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
-    if (state.photoInvalid) return 'collect_photo'
+    return state.photoInvalid ? 'collect_photo' : 'ask_style_choice'
+  })
+
+  .addEdge('ask_style_choice',     'collect_style_choice')
+  .addConditionalEdges('collect_style_choice', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    if (state.styleChoiceInvalid) return 'collect_style_choice'
     return state.photoQueueIndex < state.featuredChildIndices.length ? 'collect_photo' : 'ask_story'
   })
 

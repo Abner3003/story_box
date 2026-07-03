@@ -33,6 +33,7 @@ export interface VisualProfile {
     eyes: string;
     skin: string;
     raw_description: string;
+    chosen_style?: string;
 }
 export type MonthlyCollection = {
     id: string;
@@ -246,6 +247,7 @@ export interface Database {
 export declare function getSupabaseClient(): SupabaseClient<Database>;
 export declare const StoragePaths: {
     readonly childPhoto: (childId: string, month: string) => string;
+    readonly stylePreview: (childId: string, styleId: string) => string;
     readonly bookPdf: (bookId: string) => string;
     readonly bookCover: (bookId: string) => string;
     readonly bookPage: (bookId: string, n: number) => string;

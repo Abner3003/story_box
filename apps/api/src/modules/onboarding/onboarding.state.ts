@@ -149,6 +149,20 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => 0,
   }),
+  currentChildPhotoPath: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+
+  // ── Estilo de ilustração ─────────────────────────────────────
+  styleOptions: Annotation<Array<{ id: string; label: string }>>({
+    reducer: (_, b) => b,
+    default: () => [],
+  }),
+  styleChoiceInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
 
   // ── História do mês ──────────────────────────────────────────
   storyMoment: Annotation<string | undefined>({

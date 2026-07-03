@@ -49,6 +49,7 @@ export interface VisualProfile {
   eyes: string                   // "honey-colored eyes"
   skin: string                   // "warm medium skin tone"
   raw_description: string        // texto completo retornado pelo GPT-4o Vision
+  chosen_style?: string          // rótulo do estilo escolhido pelo responsável, ex: "Aquarela"
 }
 
 export type MonthlyCollection = {
@@ -294,6 +295,7 @@ export function getSupabaseClient(): SupabaseClient<Database> {
 
 export const StoragePaths = {
   childPhoto:      (childId: string, month: string) => `children/${childId}/photos/${month}.jpg`,
+  stylePreview:    (childId: string, styleId: string) => `children/${childId}/style-previews/${styleId}.png`,
   bookPdf:         (bookId: string)                 => `books/${bookId}/book.pdf`,
   bookCover:       (bookId: string)                 => `books/${bookId}/cover.png`,
   bookPage:        (bookId: string, n: number)      => `books/${bookId}/pages/page_${String(n).padStart(2, '0')}.png`,

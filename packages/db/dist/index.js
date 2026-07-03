@@ -25,6 +25,7 @@ function getSupabaseClient() {
 // ─────────────────────────────────────────────
 exports.StoragePaths = {
     childPhoto: (childId, month) => `children/${childId}/photos/${month}.jpg`,
+    stylePreview: (childId, styleId) => `children/${childId}/style-previews/${styleId}.png`,
     bookPdf: (bookId) => `books/${bookId}/book.pdf`,
     bookCover: (bookId) => `books/${bookId}/cover.png`,
     bookPage: (bookId, n) => `books/${bookId}/pages/page_${String(n).padStart(2, '0')}.png`,

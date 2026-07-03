@@ -2,6 +2,12 @@ import { sendText, sendImage } from '../../../lib/whatsapp.js'
 import type { OnboardingState } from '../onboarding.state.js'
 import { getPlans, formatPlanAmount } from '../../billing/billing.service.js'
 
+const INTER_MESSAGE_DELAY_MS = 1200
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export function formatOptionsList(count: number): string {
   const numbers = Array.from({ length: count }, (_, i) => `*${i + 1}*`)
   if (numbers.length === 1) return numbers[0]
@@ -15,22 +21,27 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
     throw new Error('Nenhum plano retornado pelo gateway de pagamento. Verifique a configuração da sua conta.')
   }
 
-  await sendText(state.phone, 'Escolha o plano ideal para você 👇')
-
   for (const [index, plan] of plans.entries()) {
     const amount = formatPlanAmount(plan.amount)
-    const caption = [`*${index + 1}. ${plan.name}* — ${amount}/${plan.interval}`, plan.description]
-      .filter(Boolean)
-      .join('\n\n')
+    const priceLine = plan.isRecurring ? `${amount}/${plan.interval}` : `${amount} (pagamento único)`
+    const isFirst = index === 0
+    const isLast = index === plans.length - 1
+
+    const parts = [
+      isFirst ? 'Escolha o plano ideal para você 👇\n' : undefined,
+      `*${index + 1}. ${plan.name}* — ${priceLine}`,
+      isLast ? `\nDigite ${formatOptionsList(plans.length)} para escolher o plano:` : undefined,
+    ]
+    const caption = parts.filter(Boolean).join('\n\n')
 
     if (plan.imageUrl) {
       await sendImage(state.phone, plan.imageUrl, caption)
     } else {
       await sendText(state.phone, caption)
     }
-  }
 
-  await sendText(state.phone, `Digite ${formatOptionsList(plans.length)} para escolher o plano:`)
+    if (!isLast) await sleep(INTER_MESSAGE_DELAY_MS)
+  }
 
   return { availablePlans: plans, planChoiceInvalid: false, editIntent: undefined }
 }

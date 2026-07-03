@@ -66,7 +66,11 @@ function normalizeProducts(payload: unknown): AbacatePayProduct[] {
 export async function getPlans(): Promise<AbacatePayPlan[]> {
   const payload = await requestAbacatePay('/products/list', { method: 'GET' })
   const products = normalizeProducts(payload)
-  const activeProducts = products.filter((product) => product.status === 'ACTIVE' && product.cycle)
+
+  // Assinaturas recorrentes primeiro, compras avulsas (sem cycle) por último
+  const activeProducts = products
+    .filter((product) => product.status === 'ACTIVE')
+    .sort((a, b) => Number(!a.cycle) - Number(!b.cycle))
 
   return Promise.all(
     activeProducts.map(async (product) => ({
@@ -74,7 +78,8 @@ export async function getPlans(): Promise<AbacatePayPlan[]> {
       name: product.name,
       description: product.description,
       amount: product.price,
-      interval: CYCLE_LABELS[product.cycle as string] ?? (product.cycle as string).toLowerCase(),
+      interval: product.cycle ? (CYCLE_LABELS[product.cycle] ?? product.cycle.toLowerCase()) : 'pagamento único',
+      isRecurring: Boolean(product.cycle),
       imageUrl: await getPlanImageUrl(product.id),
     })),
   )

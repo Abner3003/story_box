@@ -2,7 +2,7 @@ import { interrupt } from '@langchain/langgraph'
 import { sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
-import { saveChildVisualProfile } from '../onboarding.repository.js'
+import { saveChildVisualProfile, uploadChildPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
@@ -59,23 +59,17 @@ export async function collectPhotoNode(state: OnboardingState): Promise<Partial<
     const profile = base64 ? await extractVisualProfile(base64, mimeType) : FALLBACK_PROFILE
 
     const currentIndex = state.featuredChildIndices[state.photoQueueIndex]
-    const currentChild = state.children[currentIndex]
     const currentChildId = state.childIds[currentIndex]
-    if (currentChildId) await saveChildVisualProfile(currentChildId, profile)
 
-    const nextQueueIndex = state.photoQueueIndex + 1
-    const nextChild = state.children[state.featuredChildIndices[nextQueueIndex]]
-
-    if (nextChild) {
-      await sendText(
-        state.phone,
-        `✅ Foto de *${currentChild?.name}* analisada!\n\n📸 Agora me mande uma foto recente de *${nextChild.name}*!`,
-      )
-      return { photoInvalid: false, photoQueueIndex: nextQueueIndex, editIntent: undefined }
+    let photoPath: string | undefined
+    if (currentChildId) {
+      if (base64) photoPath = await uploadChildPhoto(currentChildId, base64, mimeType)
+      await saveChildVisualProfile(currentChildId, profile, photoPath)
     }
 
-    await sendText(state.phone, '✅ Foto analisada! Perfil visual criado com sucesso.')
-    return { photoInvalid: false, photoQueueIndex: nextQueueIndex, editIntent: undefined }
+    await sendText(state.phone, '📸 Foto analisada com sucesso!')
+
+    return { photoInvalid: false, currentChildPhotoPath: photoPath, editIntent: undefined }
   } catch {
     await sendText(state.phone, '❌ Não consegui processar a foto. Por favor, envie outra imagem com boa iluminação:')
     return { photoInvalid: true, editIntent: undefined }

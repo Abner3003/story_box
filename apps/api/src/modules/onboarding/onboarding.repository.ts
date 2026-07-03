@@ -1,5 +1,8 @@
-import { getSupabaseClient } from '@storybox/db'
+import { getSupabaseClient, StoragePaths } from '@storybox/db'
 import type { VisualProfile, SubscriberPlan, SubscriberStatus } from '@storybox/db'
+
+const ASSETS_BUCKET = 'storybox-assets'
+const STYLE_PREVIEW_SIGNED_URL_TTL = 60 * 60 * 24 // 1 dia
 
 export async function upsertSubscriber(data: {
   phone: string
@@ -64,6 +67,64 @@ export async function saveChildVisualProfile(childId: string, profile: VisualPro
       visual_profile:     profile,
       photo_storage_path: photoPath,
     })
+    .eq('id', childId)
+  if (error) throw error
+}
+
+export async function uploadChildPhoto(childId: string, base64: string, mimeType: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = StoragePaths.childPhoto(childId, new Date().toISOString().slice(0, 7))
+  const buffer = Buffer.from(base64, 'base64')
+
+  const { error } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true })
+  if (error) throw error
+
+  return path
+}
+
+export async function downloadChildPhoto(path: string): Promise<{ base64: string; mimeType: string }> {
+  const db = getSupabaseClient()
+  const { data, error } = await db.storage.from(ASSETS_BUCKET).download(path)
+  if (error || !data) throw error ?? new Error(`Foto não encontrada em ${path}`)
+
+  const buffer = Buffer.from(await data.arrayBuffer())
+  return { base64: buffer.toString('base64'), mimeType: data.type || 'image/jpeg' }
+}
+
+export async function uploadStylePreview(childId: string, styleId: string, base64Png: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = StoragePaths.stylePreview(childId, styleId)
+  const buffer = Buffer.from(base64Png, 'base64')
+
+  const { error } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: 'image/png', upsert: true })
+  if (error) throw error
+
+  const { data, error: signError } = await db.storage
+    .from(ASSETS_BUCKET)
+    .createSignedUrl(path, STYLE_PREVIEW_SIGNED_URL_TTL)
+  if (signError || !data) throw signError ?? new Error('Falha ao gerar signed URL do preview de estilo')
+
+  return data.signedUrl
+}
+
+export async function saveChildStyleChoice(childId: string, styleLabel: string) {
+  const db = getSupabaseClient()
+  const { data: row, error: fetchError } = await db
+    .from('children')
+    .select('visual_profile')
+    .eq('id', childId)
+    .single()
+  if (fetchError) throw fetchError
+
+  const currentProfile = (row?.visual_profile as VisualProfile | null) ?? ({} as VisualProfile)
+
+  const { error } = await db
+    .from('children')
+    .update({ visual_profile: { ...currentProfile, chosen_style: styleLabel } })
     .eq('id', childId)
   if (error) throw error
 }

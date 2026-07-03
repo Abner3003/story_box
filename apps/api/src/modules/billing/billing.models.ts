@@ -4,6 +4,7 @@ export interface AbacatePayPlan {
   description?: string
   amount: number
   interval: string
+  isRecurring: boolean
   imageUrl?: string | null
 }
 

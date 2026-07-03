@@ -3,6 +3,7 @@ import { findSubscriberByPhone, claimMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
 import { resumeWeeklyCollection, isInWeeklyCollection } from '../onboarding/weekly-collection.service.js'
 import { showTypingIndicator } from '../../lib/whatsapp.js'
+import { runExclusive } from '../../lib/phone-lock.js'
 
 export async function handleWhatsAppWebhook(
   payload: WhatsAppWebhookPayload,
@@ -36,26 +37,33 @@ export async function handleWhatsAppWebhook(
           }
         }
 
-        await showTypingIndicator(msg.id).catch(() => {})
+        // Serializa por telefone — se a mensagem anterior desse número ainda
+        // estiver sendo processada (Vision/geração de imagem pode levar
+        // vários segundos), espera terminar antes de tocar no mesmo thread
+        // do LangGraph. Sem isso, duas mensagens em sequência rápida rodam
+        // concorrentemente e corrompem o fluxo (respostas trocadas/erradas).
+        await runExclusive(phone, async () => {
+          await showTypingIndicator(msg.id).catch(() => {})
 
-        if (await isOnboarding(phone, { simulate: opts.simulate })) {
-          await resumeOnboarding(phone, content, { simulate: opts.simulate })
-          continue
-        }
+          if (await isOnboarding(phone, { simulate: opts.simulate })) {
+            await resumeOnboarding(phone, content, { simulate: opts.simulate })
+            return
+          }
 
-        if (await isInWeeklyCollection(phone)) {
-          await resumeWeeklyCollection(phone, content)
-          continue
-        }
+          if (await isInWeeklyCollection(phone)) {
+            await resumeWeeklyCollection(phone, content)
+            return
+          }
 
-        const subscriber = await findSubscriberByPhone(phone)
+          const subscriber = await findSubscriberByPhone(phone)
 
-        if (!subscriber) {
-          await startOnboarding(phone, { simulate: opts.simulate, name: contactName })
-          continue
-        }
+          if (!subscriber) {
+            await startOnboarding(phone, { simulate: opts.simulate, name: contactName })
+            return
+          }
 
-        // TODO: enfileirar no inboundQueue para o agente LangGraph processar
+          // TODO: enfileirar no inboundQueue para o agente LangGraph processar
+        })
       }
     }
   }

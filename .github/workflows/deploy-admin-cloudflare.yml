@@ -53,5 +53,4 @@ jobs:
 
           npx wrangler@3 pages deploy apps/admin/build/client \
             --project-name storybox-admin \
-            --api-token "$CLOUDFLARE_API_TOKEN" \
             --commit-dirty

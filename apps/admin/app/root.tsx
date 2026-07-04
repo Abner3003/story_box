@@ -1,11 +1,10 @@
-import type { LinksFunction, MetaFunction } from '@remix-run/cloudflare'
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react'
 
 import stylesheet from './styles/global.css?url'
 
-export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
+export const links = () => [{ rel: 'stylesheet', href: stylesheet }]
 
-export const meta: MetaFunction = () => [
+export const meta = () => [
   { title: 'StoryBox Admin' },
   {
     name: 'description',

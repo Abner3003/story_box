@@ -1,51 +1,42 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare'
-import { json, redirect } from '@remix-run/cloudflare'
-import { Form, Link, useLoaderData, useNavigation } from '@remix-run/react'
+import { Link, useSearchParams } from '@remix-run/react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { getReviewerName, listBooks, reviewBook } from '../lib/api.server'
-import { formatDate, formatStatus } from '../lib/format'
+import { loadBooks, saveBooks, touchBook, type BookRecord } from '../data/books.js'
+import { formatDate, formatStatus } from '../lib/format.js'
 
 const PAGE_SIZE = 10
 
-export async function loader({ context, request }: LoaderFunctionArgs) {
-  const url = new URL(request.url)
-  const page = Math.max(1, Number(url.searchParams.get('page') ?? '1') || 1)
-  const books = await listBooks(page, PAGE_SIZE + 1, context)
-  const visibleBooks = books.slice(0, PAGE_SIZE)
-
-  return json({
-    books: visibleBooks,
-    page,
-    reviewerName: getReviewerName(context),
-    hasPrev: page > 1,
-    hasNext: books.length > PAGE_SIZE,
-  })
+function statusClass(status: string) {
+  return status
 }
 
-export async function action({ context, request }: ActionFunctionArgs) {
-  const formData = await request.formData()
-  const bookId = String(formData.get('bookId') ?? '')
-  const action = String(formData.get('action') ?? '')
-  const reviewedBy = String(formData.get('reviewedBy') ?? getReviewerName(context))
-  const notes = String(formData.get('notes') ?? '').trim()
-  const redirectTo = String(formData.get('redirectTo') ?? '/')
+export default function IndexRoute() {
+  const [books, setBooks] = useState<BookRecord[]>(() => loadBooks())
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
 
-  if (!bookId || !action) {
-    return json({ error: 'bookId e action são obrigatórios' }, { status: 400 })
+  useEffect(() => {
+    saveBooks(books)
+  }, [books])
+
+  const pagedBooks = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return books.slice(start, start + PAGE_SIZE)
+  }, [books, page])
+
+  const hasPrev = page > 1
+  const hasNext = page * PAGE_SIZE < books.length
+
+  function reviewBook(bookId: string, action: 'approve' | 'reject') {
+    setBooks((current) =>
+      touchBook(current, bookId, {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        reviewedBy: 'admin-local',
+        reviewedAt: new Date().toISOString(),
+        reviewNotes: action === 'approve' ? 'Approved locally in static SPA mode.' : 'Rejected locally in static SPA mode.',
+      }),
+    )
   }
-
-  if (action !== 'approve' && action !== 'reject') {
-    return json({ error: 'action inválida' }, { status: 400 })
-  }
-
-  await reviewBook(bookId, { action, reviewed_by: reviewedBy, notes: notes || undefined }, context)
-  return redirect(redirectTo)
-}
-
-export default function AdminDashboard() {
-  const { books, page, hasPrev, hasNext, reviewerName } = useLoaderData<typeof loader>()
-  const navigation = useNavigation()
-  const isBusy = navigation.state !== 'idle'
 
   return (
     <main className="shell">
@@ -53,23 +44,31 @@ export default function AdminDashboard() {
         <div className="eyebrow">StoryBox Admin</div>
         <h1 className="title">Livros gerados para revisão</h1>
         <p className="subtitle">
-          Tabela paginada com nome do cliente, status do livro e ações de aprovar, abrir página de revisão e baixar o
-          PDF. O reviewer atual é <strong>{reviewerName}</strong>.
+          Portal estático em SPA mode. As alterações ficam salvas apenas neste navegador, sem backend nesta versão.
         </p>
 
         <div className="toolbar">
           <span className="pill">
             Página <strong>{page}</strong>
-            {isBusy ? ' atualizando...' : ''}
           </span>
 
           <nav aria-label="Paginação">
-            <Link className={`button secondary ${!hasPrev ? 'disabled' : ''}`} to={hasPrev ? `/?page=${page - 1}` : '#'}>
+            <button
+              className={`button secondary ${!hasPrev ? 'disabled' : ''}`}
+              type="button"
+              onClick={() => hasPrev && setSearchParams({ page: String(page - 1) })}
+              disabled={!hasPrev}
+            >
               Anterior
-            </Link>
-            <Link className={`button secondary ${!hasNext ? 'disabled' : ''}`} to={hasNext ? `/?page=${page + 1}` : '#'}>
+            </button>
+            <button
+              className={`button secondary ${!hasNext ? 'disabled' : ''}`}
+              type="button"
+              onClick={() => hasNext && setSearchParams({ page: String(page + 1) })}
+              disabled={!hasNext}
+            >
               Próxima
-            </Link>
+            </button>
           </nav>
         </div>
       </section>
@@ -86,22 +85,22 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {books.map((book) => (
+            {pagedBooks.map((book) => (
               <tr key={book.id}>
                 <td>
                   <div className="stack">
-                    <strong>{book.childName ?? 'Sem nome'}</strong>
-                    <span className="muted">Livro #{book.id.slice(0, 8)}</span>
+                    <strong>{book.childName}</strong>
+                    <span className="muted">Livro #{book.id}</span>
                   </div>
                 </td>
                 <td>
                   <div className="stack">
-                    <strong>{book.title ?? 'Título não definido'}</strong>
-                    <span className="muted">{book.referenceMonth ?? 'Coleção sem referência'}</span>
+                    <strong>{book.title}</strong>
+                    <span className="muted">{book.referenceMonth}</span>
                   </div>
                 </td>
                 <td>
-                  <span className={`status ${book.status}`}>{formatStatus(book.status)}</span>
+                  <span className={`status ${statusClass(book.status)}`}>{formatStatus(book.status)}</span>
                 </td>
                 <td>
                   <div className="stack">
@@ -111,15 +110,9 @@ export default function AdminDashboard() {
                 </td>
                 <td>
                   <div className="actions">
-                    <Form method="post">
-                      <input type="hidden" name="bookId" value={book.id} />
-                      <input type="hidden" name="action" value="approve" />
-                      <input type="hidden" name="reviewedBy" value={reviewerName} />
-                      <input type="hidden" name="redirectTo" value={`/?page=${page}`} />
-                      <button className="button" type="submit">
-                        Aprovar
-                      </button>
-                    </Form>
+                    <button className="button" type="button" onClick={() => reviewBook(book.id, 'approve')}>
+                      Aprovar
+                    </button>
 
                     <Link className="button secondary" to={`/books/${book.id}`}>
                       Revisar página
@@ -137,7 +130,7 @@ export default function AdminDashboard() {
               </tr>
             ))}
 
-            {!books.length ? (
+            {!pagedBooks.length ? (
               <tr>
                 <td colSpan={5}>
                   <p className="muted">Nenhum livro encontrado para esta página.</p>

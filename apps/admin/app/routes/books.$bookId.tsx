@@ -1,52 +1,55 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare'
-import { json, redirect } from '@remix-run/cloudflare'
-import { Form, Link, useLoaderData, useNavigation } from '@remix-run/react'
+import { Link, useParams } from '@remix-run/react'
+import { useMemo, useState } from 'react'
 
-import { getBook, getPdfUrl, getReviewerName, reviewBook } from '../lib/api.server'
-import { formatDate, formatStatus } from '../lib/format'
-
-export async function loader({ context, params }: LoaderFunctionArgs) {
-  const bookId = params.bookId
-  if (!bookId) {
-    throw new Response('Book id is required', { status: 400 })
-  }
-
-  const book = await getBook(bookId, context)
-  const pdfUrl = book.pdfUrl ?? (await getPdfUrl(bookId, context))
-
-  return json({
-    book: {
-      ...book,
-      pdfUrl,
-    },
-    reviewerName: getReviewerName(context),
-  })
-}
-
-export async function action({ context, params, request }: ActionFunctionArgs) {
-  const bookId = params.bookId
-  if (!bookId) {
-    throw new Response('Book id is required', { status: 400 })
-  }
-
-  const formData = await request.formData()
-  const action = String(formData.get('action') ?? '')
-  const notes = String(formData.get('notes') ?? '').trim()
-  const reviewedBy = String(formData.get('reviewedBy') ?? getReviewerName(context))
-
-  if (action !== 'approve' && action !== 'reject') {
-    return json({ error: 'action inválida' }, { status: 400 })
-  }
-
-  await reviewBook(bookId, { action, reviewed_by: reviewedBy, notes: notes || undefined }, context)
-  return redirect(`/books/${bookId}`)
-}
+import { loadBooks, touchBook } from '../data/books.js'
+import { formatDate, formatStatus } from '../lib/format.js'
 
 export default function BookReviewRoute() {
-  const { book, reviewerName } = useLoaderData<typeof loader>()
-  const navigation = useNavigation()
-  const isBusy = navigation.state !== 'idle'
-  const pages = book.storyJson?.pages ?? []
+  const params = useParams()
+  const bookId = params.bookId ?? ''
+  const [books, setBooks] = useState(() => loadBooks())
+
+  const book = useMemo(() => books.find((item) => item.id === bookId), [books, bookId])
+
+  function approve() {
+    if (!book) return
+    setBooks((current) =>
+      touchBook(current, book.id, {
+        status: 'approved',
+        reviewedBy: 'admin-local',
+        reviewedAt: new Date().toISOString(),
+        reviewNotes: 'Approved locally in static SPA mode.',
+      }),
+    )
+  }
+
+  function reject() {
+    if (!book) return
+    setBooks((current) =>
+      touchBook(current, book.id, {
+        status: 'rejected',
+        reviewedBy: 'admin-local',
+        reviewedAt: new Date().toISOString(),
+        reviewNotes: 'Rejected locally in static SPA mode.',
+      }),
+    )
+  }
+
+  if (!book) {
+    return (
+      <main className="shell">
+        <section className="panel">
+          <h1 className="title" style={{ fontSize: '2rem' }}>
+            Livro não encontrado
+          </h1>
+          <p className="muted">Volte para a tabela e escolha outro item.</p>
+          <Link className="button" to="/">
+            Voltar
+          </Link>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className="shell">
@@ -54,9 +57,9 @@ export default function BookReviewRoute() {
         <div className="toolbar">
           <div className="stack">
             <div className="eyebrow">Revisão de Livro</div>
-            <h1 className="title">{book.title ?? 'Livro sem título'}</h1>
+            <h1 className="title">{book.title}</h1>
             <p className="subtitle">
-              {book.childName ?? 'Cliente não identificado'} · <span className={`status ${book.status}`}>{formatStatus(book.status)}</span>
+              {book.childName} · <span className={`status ${book.status}`}>{formatStatus(book.status)}</span>
             </p>
           </div>
 
@@ -77,26 +80,20 @@ export default function BookReviewRoute() {
         <section className="panel">
           <h2>Páginas</h2>
           <div className="pages">
-            {pages.length ? (
-              pages.map((page) => (
-                <article className="page-card" key={page.page_number}>
-                  <div className="page-meta">
-                    <strong>Página {page.page_number}</strong>
-                    <span className="muted">{page.image_storage_path ? 'Imagem gerada' : 'Sem imagem'}</span>
-                  </div>
-                  <p>{page.text}</p>
-                  <p className="muted">{page.illustration_prompt}</p>
-                </article>
-              ))
-            ) : (
-              <p className="muted">Este livro ainda não tem páginas estruturadas.</p>
-            )}
+            {book.storyJson.pages.map((page) => (
+              <article className="page-card" key={page.page_number}>
+                <div className="page-meta">
+                  <strong>Página {page.page_number}</strong>
+                </div>
+                <p>{page.text}</p>
+                <p className="muted">{page.illustration_prompt}</p>
+              </article>
+            ))}
           </div>
         </section>
 
         <aside className="panel">
           <h2>Ação de curadoria</h2>
-          <p className="muted">Reviewer atual: {reviewerName}</p>
 
           <div className="stack">
             <div>
@@ -115,29 +112,19 @@ export default function BookReviewRoute() {
 
           <div className="separator" />
 
-          <Form method="post" className="stack">
-            <input type="hidden" name="reviewedBy" value={reviewerName} />
-            <label className="stack">
-              <span>Notas de revisão</span>
-              <textarea className="textarea" name="notes" placeholder="Escreva observações para o time, se houver." />
-            </label>
-
-            <div className="actions">
-              <button className="button" type="submit" name="action" value="approve" disabled={isBusy}>
-                Aprovar
-              </button>
-              <button className="button danger" type="submit" name="action" value="reject" disabled={isBusy}>
-                Rejeitar
-              </button>
-            </div>
-          </Form>
+          <div className="actions">
+            <button className="button" type="button" onClick={approve}>
+              Aprovar
+            </button>
+            <button className="button danger" type="button" onClick={reject}>
+              Rejeitar
+            </button>
+          </div>
 
           <div className="separator" />
 
           <div className="stack">
             <strong>Metadados</strong>
-            <span className="muted">Collection: {book.collectionId}</span>
-            <span className="muted">Child: {book.childId}</span>
             <span className="muted">Revisado por: {book.reviewedBy ?? '—'}</span>
             <span className="muted">Revisado em: {formatDate(book.reviewedAt)}</span>
             <span className="muted">Notas: {book.reviewNotes ?? '—'}</span>

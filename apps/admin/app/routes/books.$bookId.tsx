@@ -7,9 +7,6 @@ import { clearAdminApiKey, getAdminApiKey, setAdminApiKey } from '../lib/auth.cl
 import { formatDate, formatStatus } from '../lib/format.js'
 import type { AdminBookDetail } from '../lib/admin-types.js'
 
-const EXPECTED_USERNAME = import.meta.env.VITE_ADMIN_USERNAME?.trim() || 'abner3003'
-const EXPECTED_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD?.trim() || 'Wefcvb58960906@'
-
 export default function BookReviewRoute() {
   const params = useParams()
   const bookId = params.bookId ?? ''
@@ -56,17 +53,7 @@ export default function BookReviewRoute() {
     void loadBook()
   }, [authReady, bookId])
 
-  async function handleLogin(input: { username: string; password: string; apiKey: string }) {
-    if (input.username.trim() !== EXPECTED_USERNAME) {
-      setAuthError('Usuário inválido.')
-      return
-    }
-
-    if (input.password !== EXPECTED_PASSWORD) {
-      setAuthError('Senha inválida.')
-      return
-    }
-
+  async function handleLogin(input: { apiKey: string }) {
     if (input.apiKey.trim().length === 0) {
       setAuthError('Informe a API key do backend.')
       return
@@ -103,7 +90,7 @@ export default function BookReviewRoute() {
     try {
       await reviewBook(book.id, {
         action: 'approve',
-        reviewed_by: EXPECTED_USERNAME,
+        reviewed_by: 'storybox-admin',
         notes: reviewNotes || 'Aprovado pelo portal admin.',
       })
       await loadBook()
@@ -121,7 +108,7 @@ export default function BookReviewRoute() {
     try {
       await reviewBook(book.id, {
         action: 'reject',
-        reviewed_by: EXPECTED_USERNAME,
+        reviewed_by: 'storybox-admin',
         notes: reviewNotes || 'Rejeitado pelo portal admin.',
       })
       await loadBook()

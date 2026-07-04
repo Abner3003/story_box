@@ -8,8 +8,6 @@ import { formatDate, formatStatus } from '../lib/format.js'
 import type { AdminBookSummary } from '../lib/admin-types.js'
 
 const PAGE_SIZE = 10
-const EXPECTED_USERNAME = import.meta.env.VITE_ADMIN_USERNAME?.trim() || 'abner3003'
-const EXPECTED_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD?.trim() || 'Wefcvb58960906@'
 
 function statusClass(status: string) {
   return status
@@ -67,12 +65,7 @@ export default function IndexRoute() {
     return 'Nenhum livro encontrado para esta página.'
   }, [error, loading])
 
-  async function handleLogin(input: { username: string; password: string; apiKey: string }) {
-    if (input.username.trim() !== EXPECTED_USERNAME || input.password !== EXPECTED_PASSWORD) {
-      setAuthError('Usuário ou senha inválidos.')
-      return
-    }
-
+  async function handleLogin(input: { apiKey: string }) {
     if (!input.apiKey.trim()) {
       setAuthError('Informe a API key do backend.')
       return
@@ -98,7 +91,7 @@ export default function IndexRoute() {
     try {
       await reviewBook(bookId, {
         action: 'approve',
-        reviewed_by: EXPECTED_USERNAME,
+        reviewed_by: 'storybox-admin',
         notes: 'Aprovado pelo portal admin.',
       })
       await fetchBooks()
@@ -229,4 +222,3 @@ export default function IndexRoute() {
     </main>
   )
 }
-

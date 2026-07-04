@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["@remix-run/cloudflare", "node", "react", "react-dom"]
+  },
+  "include": ["app", "vite.config.ts", "remix.env.d.ts"]
+}

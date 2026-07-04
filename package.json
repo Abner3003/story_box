@@ -4,7 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --parallel --filter './apps/*' dev",
+    "dev:api": "pnpm --filter @storybox/api dev",
+    "dev:admin": "pnpm --filter @storybox/admin dev",
+    "dev:worker:generation": "pnpm --filter @storybox/api worker:generation",
+    "dev:worker:scheduler": "pnpm --filter @storybox/api worker:scheduler",
+    "dev:worker:delivery": "pnpm --filter @storybox/api worker:delivery",
     "build": "pnpm --filter './packages/*' build && pnpm --filter './apps/*' build",
+    "build:api": "pnpm --filter @storybox/api build",
+    "build:admin": "pnpm --filter @storybox/admin build",
     "lint": "pnpm --recursive lint",
     "typecheck": "pnpm --recursive typecheck"
   },

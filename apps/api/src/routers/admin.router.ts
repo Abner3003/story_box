@@ -65,7 +65,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
         200: {
           type: 'object',
           properties: {
-            url: { type: 'string' },
+            url: { type: ['string', 'null'] },
           },
           required: ['url'],
         },
@@ -73,6 +73,9 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
     },
   }, async (req) => {
     const book = await getBookDetail(req.params.id)
+    if (!book.pdfUrl) {
+      return { url: null }
+    }
     return { url: book.pdfUrl }
   })
 

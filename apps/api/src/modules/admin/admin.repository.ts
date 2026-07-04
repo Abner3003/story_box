@@ -19,7 +19,7 @@ export async function getBookById(id: string) {
   const db = getSupabaseClient()
   const { data, error } = await db
     .from('books')
-    .select('*, monthly_collections(subscriber_id)')
+    .select('*, children(name), monthly_collections(subscriber_id, reference_month)')
     .eq('id', id)
     .single()
   if (error) throw error

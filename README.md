@@ -60,6 +60,23 @@ pnpm --filter @storybox/api dev
 # Swagger em http://localhost:3001/docs
 ```
 
+### 6.1. Roda o portal admin
+
+```bash
+pnpm --filter @storybox/admin dev
+# Portal admin em http://localhost:5173
+```
+
+### 6.2. Rodar só uma parte do monorepo
+
+```bash
+pnpm dev:api
+pnpm dev:admin
+pnpm dev:worker:generation
+pnpm dev:worker:scheduler
+pnpm dev:worker:delivery
+```
+
 ### 7. Expõe o webhook para a Meta (dev)
 
 ```bash
@@ -115,6 +132,8 @@ storybox/
 ## Deploy na Hetzner
 
 O deploy de produção está documentado em [`deploy/hetzner/README.md`](deploy/hetzner/README.md).
+
+O portal admin tem deploy separado no Cloudflare via workflow próprio em [`.github/workflows/deploy-admin-cloudflare.yml`](.github/workflows/deploy-admin-cloudflare.yml).
 
 Resumo:
 

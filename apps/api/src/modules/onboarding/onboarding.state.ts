@@ -209,6 +209,10 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => false,
   }),
+  storyChallenge: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
   collectionIds: Annotation<string[]>({
     reducer: (_, b) => b,
     default: () => [],

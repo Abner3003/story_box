@@ -12,6 +12,7 @@ import { askStoryNode } from './nodes/ask-story.js'
 import { collectMomentPhotoNode } from './nodes/collect-moment-photo.js'
 import { collectMomentNode } from './nodes/collect-moment.js'
 import { collectChallengeNode } from './nodes/collect-challenge.js'
+import { collectThemeNode } from './nodes/collect-theme.js'
 import { triggerGenerationNode } from './nodes/trigger-generation.js'
 import { checkpointer } from './checkpointer.js'
 
@@ -32,6 +33,7 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('collect_moment_photo',          collectMomentPhotoNode)
   .addNode('collect_moment',                collectMomentNode)
   .addNode('collect_challenge',             collectChallengeNode)
+  .addNode('collect_theme',                 collectThemeNode)
   .addNode('trigger_generation',            triggerGenerationNode)
 
   .addEdge('__start__',                    'ask_weekly_kickoff')
@@ -57,7 +59,8 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addConditionalEdges('collect_moment_photo', (state) =>
     state.momentPhotoInvalid ? 'collect_moment_photo' : 'collect_moment')
   .addEdge('collect_moment',       'collect_challenge')
-  .addConditionalEdges('collect_challenge', (state) =>
+  .addEdge('collect_challenge',    'collect_theme')
+  .addConditionalEdges('collect_theme', (state) =>
     state.storyQueueIndex < state.featuredChildIndices.length ? 'collect_moment_photo' : 'trigger_generation')
   .addEdge('trigger_generation',   '__end__')
 

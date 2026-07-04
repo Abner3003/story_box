@@ -69,14 +69,19 @@ export async function getChildrenForSubscriber(subscriberId: string): Promise<Ch
 
 export async function findSubscribersDueForWeeklyKickoff(): Promise<Subscriber[]> {
   const db = getSupabaseClient()
-  const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+  // "Devido" = ainda não recebeu convite nesta semana calendário (segunda a
+  // segunda) — mais preciso que uma janela rolante de N dias, que pode
+  // desalinhar com o tempo. Hoje todo plano recorrente permite 1x/semana;
+  // se algum plano precisar de mais de um envio por semana no futuro, é
+  // aqui que entraria uma contagem por semana em vez desse corte único.
+  const weekStartIso = `${currentWeekStart()}T00:00:00.000Z`
 
   const { data, error } = await db
     .from('subscribers')
     .select('*')
     .eq('status', 'active')
     .eq('is_recurring', true)
-    .or(`last_weekly_kickoff_sent_at.is.null,last_weekly_kickoff_sent_at.lt.${sixDaysAgo}`)
+    .or(`last_weekly_kickoff_sent_at.is.null,last_weekly_kickoff_sent_at.lt.${weekStartIso}`)
   if (error) throw error
   return data ?? []
 }
@@ -205,6 +210,7 @@ export async function upsertMonthlyCollection(data: {
   moment_text: string
   challenge_text: string
   photo_storage_path?: string
+  theme_pref?: string
 }) {
   const db = getSupabaseClient()
   const reference_month = currentWeekStart()
@@ -219,6 +225,7 @@ export async function upsertMonthlyCollection(data: {
         moment_text:             data.moment_text,
         challenge_text:          data.challenge_text,
         photo_storage_path:      data.photo_storage_path,
+        theme_pref:              data.theme_pref,
         status:                  'generating',
         reminders_sent:          0,
         collection_completed_at: new Date().toISOString(),

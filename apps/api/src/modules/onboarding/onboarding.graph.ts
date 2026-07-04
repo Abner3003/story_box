@@ -30,6 +30,7 @@ import { askStoryNode } from './nodes/ask-story.js'
 import { collectMomentPhotoNode } from './nodes/collect-moment-photo.js'
 import { collectMomentNode } from './nodes/collect-moment.js'
 import { collectChallengeNode } from './nodes/collect-challenge.js'
+import { collectThemeNode } from './nodes/collect-theme.js'
 import { triggerGenerationNode } from './nodes/trigger-generation.js'
 import type { OnboardingState } from './onboarding.state.js'
 import { checkpointer } from './checkpointer.js'
@@ -76,6 +77,7 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('collect_moment_photo',        collectMomentPhotoNode)
   .addNode('collect_moment',              collectMomentNode)
   .addNode('collect_challenge',           collectChallengeNode)
+  .addNode('collect_theme',               collectThemeNode)
   .addNode('trigger_generation',          triggerGenerationNode)
 
   .addEdge('__start__',            'welcome')
@@ -151,7 +153,8 @@ const graph = new StateGraph(OnboardingAnnotation)
     return state.momentPhotoInvalid ? 'collect_moment_photo' : 'collect_moment'
   })
   .addConditionalEdges('collect_moment', (state) => editRoute(state) ?? 'collect_challenge')
-  .addConditionalEdges('collect_challenge', (state) => {
+  .addConditionalEdges('collect_challenge', (state) => editRoute(state) ?? 'collect_theme')
+  .addConditionalEdges('collect_theme', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
     return state.storyQueueIndex < state.featuredChildIndices.length ? 'collect_moment_photo' : 'trigger_generation'

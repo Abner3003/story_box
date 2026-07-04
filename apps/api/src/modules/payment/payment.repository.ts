@@ -13,6 +13,18 @@ export async function findSubscriberByAbacatePayId(customerId: string) {
   return data
 }
 
+export async function getSubscriberById(id: string) {
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('subscribers')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function findSubscriberByPhone(phone: string) {
   const db = getSupabaseClient()
   const { data, error } = await db

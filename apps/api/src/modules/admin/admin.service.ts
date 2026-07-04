@@ -1,14 +1,60 @@
 import { deliveryQueue, regenQueue } from '@storybox/queues'
 import type { StoryJSON } from '@storybox/db'
-import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery, RegenerateBookBody } from './admin.models.js'
+import type {
+  AdminBookDetail,
+  AdminBookSummary,
+  ListBooksQuery,
+  ReviewBookBody,
+  ListCollectionsQuery,
+  RegenerateBookBody,
+} from './admin.models.js'
 import { listBooks, getBookById, updateBookStatus, listCollections } from './admin.repository.js'
+import { getSignedPdfUrl } from '../delivery/delivery.repository.js'
 
 const DEFAULT_LIMIT = 20
+
+type RawBook = Awaited<ReturnType<typeof listBooks>>[number] & {
+  children?: { name?: string }
+  monthly_collections?: { reference_month?: string }
+}
+
+async function mapBookSummary(book: RawBook): Promise<AdminBookSummary> {
+  return {
+    id: book.id,
+    status: book.status,
+    title: book.title ?? undefined,
+    childName: book.children?.name ?? undefined,
+    referenceMonth: book.monthly_collections?.reference_month ?? undefined,
+    pdfUrl: book.pdf_storage_path ? await getSignedPdfUrl(book.pdf_storage_path) : null,
+    reviewedBy: book.reviewed_by ?? undefined,
+    reviewedAt: book.reviewed_at ?? undefined,
+    reviewNotes: book.review_notes ?? undefined,
+    createdAt: book.created_at,
+    updatedAt: book.updated_at,
+  }
+}
+
+async function mapBookDetail(book: Awaited<ReturnType<typeof getBookById>>): Promise<AdminBookDetail> {
+  const summary = await mapBookSummary(book as RawBook)
+  return {
+    ...summary,
+    collectionId: book.collection_id,
+    childId: book.child_id,
+    storyJson: book.story_json as AdminBookDetail['storyJson'],
+  }
+}
 
 export async function getBooksPage(query: ListBooksQuery) {
   const limit = query.limit ?? DEFAULT_LIMIT
   const offset = ((query.page ?? 1) - 1) * limit
-  return listBooks({ status: query.status, limit, offset })
+  const books = await listBooks({ status: query.status, limit, offset })
+  return Promise.all(books.map((book) => mapBookSummary(book as RawBook)))
+}
+
+export async function getBookDetail(bookId: string) {
+  const book = await getBookById(bookId)
+  if (!book) throw new Error('Book not found')
+  return mapBookDetail(book)
 }
 
 export async function reviewBook(bookId: string, body: ReviewBookBody) {

@@ -17,6 +17,7 @@ export type OutboundMessage =
   | { type: 'image';   to: string; link: string; caption?: string }
   | { type: 'buttons'; to: string; body: string; buttons: Array<{ id: string; title: string }> }
   | { type: 'template'; to: string; name: string; languageCode: string; components?: unknown[] }
+  | { type: 'document'; to: string; link: string; filename: string; caption?: string }
 
 type Interceptor = (msg: OutboundMessage) => void
 
@@ -121,6 +122,11 @@ export async function sendTemplate(
       ...(components ? { components } : {}),
     },
   })
+}
+
+export async function sendDocument(to: string, link: string, filename: string, caption?: string): Promise<void> {
+  if (_interceptor) { _interceptor({ type: 'document', to, link, filename, caption }); return }
+  await post({ to, type: 'document', document: { link, filename, caption } })
 }
 
 export async function sendButtons(

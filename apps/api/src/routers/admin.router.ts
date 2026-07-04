@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery, RegenerateBookBody } from '../modules/admin/admin.models.js'
-import { getBooksPage, reviewBook, getCollectionsPage, regenerateBook } from '../modules/admin/admin.service.js'
+import { getBooksPage, getBookDetail, reviewBook, getCollectionsPage, regenerateBook } from '../modules/admin/admin.service.js'
 
 const paginationQuerystring = {
   type: 'object',
@@ -33,6 +33,47 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
     },
   }, async (req) => {
     return getBooksPage(req.query)
+  })
+
+  app.get<{ Params: { id: string } }>('/books/:id', {
+    schema: {
+      tags: ['Admin'],
+      summary: 'Detalhe de um livro para revisão',
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+      },
+      response: {
+        200: { type: 'object' },
+      },
+    },
+  }, async (req) => {
+    return getBookDetail(req.params.id)
+  })
+
+  app.get<{ Params: { id: string } }>('/books/:id/pdf-url', {
+    schema: {
+      tags: ['Admin'],
+      summary: 'URL assinada para download do PDF',
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            url: { type: 'string' },
+          },
+          required: ['url'],
+        },
+      },
+    },
+  }, async (req) => {
+    const book = await getBookDetail(req.params.id)
+    return { url: book.pdfUrl }
   })
 
   app.post<{ Params: { id: string }; Body: ReviewBookBody }>('/books/:id/review', {

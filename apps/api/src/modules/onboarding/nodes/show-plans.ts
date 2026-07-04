@@ -3,6 +3,7 @@ import type { OnboardingState } from '../onboarding.state.js'
 import { getPlans, formatPlanAmount } from '../../billing/billing.service.js'
 
 const INTER_MESSAGE_DELAY_MS = 1200
+const PRE_BUTTONS_DELAY_MS = 3000
 const MAX_NATIVE_BUTTONS = 3
 
 export function buildPlanButtons(count: number) {
@@ -58,7 +59,7 @@ export async function showPlansNode(state: OnboardingState): Promise<Partial<Onb
   if (plans.length <= MAX_NATIVE_BUTTONS) {
     // dá tempo da última imagem (busca de URL externa pela Meta) ser entregue
     // antes do botão, senão o botão pode chegar primeiro no celular
-    await sleep(INTER_MESSAGE_DELAY_MS)
+    await sleep(PRE_BUTTONS_DELAY_MS)
     await sendButtons(state.phone, 'Escolha uma opção:', buildPlanButtons(plans.length))
   }
 

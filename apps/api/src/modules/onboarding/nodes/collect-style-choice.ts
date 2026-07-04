@@ -3,6 +3,7 @@ import { sendText } from '../../../lib/whatsapp.js'
 import { checkEditIntent } from '../edit-intent.js'
 import { saveChildStyleChoice } from '../onboarding.repository.js'
 import { formatOptionsList } from './show-plans.js'
+import { looksLikeStrayMediaMessage } from '../../../lib/message-tags.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
 async function advance(state: OnboardingState): Promise<Partial<OnboardingState>> {
@@ -30,6 +31,11 @@ export async function collectStyleChoiceNode(state: OnboardingState): Promise<Pa
   if (edit) return edit
 
   const trimmed = choice.trim()
+
+  if (looksLikeStrayMediaMessage(trimmed)) {
+    return { styleChoiceInvalid: true }
+  }
+
   const index = Number.parseInt(trimmed, 10) - 1
   const selected = state.styleOptions[index] ?? state.styleOptions.find((opt) => opt.id === trimmed)
 

@@ -3,6 +3,7 @@ import { sendButtons, sendText } from '../../../lib/whatsapp.js'
 import type { OnboardingState } from '../onboarding.state.js'
 import { upsertSubscriber } from '../onboarding.repository.js'
 import { formatOptionsList, buildPlanButtons } from './show-plans.js'
+import { looksLikeStrayMediaMessage } from '../../../lib/message-tags.js'
 
 const MAX_NATIVE_BUTTONS = 3
 
@@ -14,7 +15,13 @@ function parsePlanChoice(raw: string): number {
 
 export async function collectPlanChoiceNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
   const choice = interrupt<string>('awaiting_plan_choice')
-  const index = parsePlanChoice(choice.trim())
+  const trimmed = choice.trim()
+
+  if (looksLikeStrayMediaMessage(trimmed)) {
+    return { planChoiceInvalid: true }
+  }
+
+  const index = parsePlanChoice(trimmed)
   const selectedPlan = state.availablePlans[index]
 
   if (!selectedPlan) {

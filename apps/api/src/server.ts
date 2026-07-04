@@ -15,7 +15,11 @@ const app = Fastify({
   logger: true,
   ajv: { customOptions: { keywords: ['example'] } },
 })
-await app.register(cors, { origin: true })
+await app.register(cors, {
+  origin: true,
+  allowedHeaders: ['Content-Type', 'x-admin-key'],
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+})
 
 await app.register(swagger, {
   openapi: {

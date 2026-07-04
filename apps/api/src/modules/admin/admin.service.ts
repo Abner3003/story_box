@@ -7,8 +7,9 @@ import type {
   ReviewBookBody,
   ListCollectionsQuery,
   RegenerateBookBody,
+  UpdateBookBody,
 } from './admin.models.js'
-import { listBooks, getBookById, updateBookStatus, listCollections } from './admin.repository.js'
+import { listBooks, getBookById, updateBookStatus, updateBook, listCollections } from './admin.repository.js'
 import { getSignedPdfUrl } from '../delivery/delivery.repository.js'
 
 const DEFAULT_LIMIT = 20
@@ -77,6 +78,18 @@ export async function reviewBook(bookId: string, body: ReviewBookBody) {
       subscriberId: book.monthly_collections?.subscriber_id,
     })
   }
+}
+
+export async function editBook(bookId: string, body: UpdateBookBody) {
+  const book = await getBookById(bookId)
+  if (!book) throw new Error('Book not found')
+
+  const updated = await updateBook(bookId, {
+    title: body.title?.trim() || undefined,
+    review_notes: body.reviewNotes?.trim() || undefined,
+  })
+
+  return mapBookDetail(updated as Awaited<ReturnType<typeof getBookById>>)
 }
 
 export async function regenerateBook(bookId: string, body: RegenerateBookBody) {

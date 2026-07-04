@@ -116,6 +116,10 @@ textarea {
   color: var(--text);
 }
 
+.field-block {
+  width: 100%;
+}
+
 .textarea {
   border-radius: 16px;
   width: 100%;
@@ -146,6 +150,11 @@ textarea {
 
 .button.danger {
   background: linear-gradient(135deg, #fb7185, #f97316);
+}
+
+.error {
+  margin: 0;
+  color: #fecaca;
 }
 
 .card {
@@ -320,4 +329,23 @@ tr:hover td {
   .grid.two {
     grid-template-columns: 1fr;
   }
+
+  .auth-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-hero {
+  max-width: 720px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-form > :last-child,
+.auth-form .error {
+  grid-column: 1 / -1;
 }

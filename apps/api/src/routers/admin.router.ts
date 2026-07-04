@@ -1,6 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify'
-import type { ListBooksQuery, ReviewBookBody, ListCollectionsQuery, RegenerateBookBody } from '../modules/admin/admin.models.js'
-import { getBooksPage, getBookDetail, reviewBook, getCollectionsPage, regenerateBook } from '../modules/admin/admin.service.js'
+import type {
+  ListBooksQuery,
+  ReviewBookBody,
+  ListCollectionsQuery,
+  RegenerateBookBody,
+  UpdateBookBody,
+} from '../modules/admin/admin.models.js'
+import { getBooksPage, getBookDetail, reviewBook, getCollectionsPage, regenerateBook, editBook } from '../modules/admin/admin.service.js'
 
 const paginationQuerystring = {
   type: 'object',
@@ -50,6 +56,30 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
     },
   }, async (req) => {
     return getBookDetail(req.params.id)
+  })
+
+  app.patch<{ Params: { id: string }; Body: UpdateBookBody }>('/books/:id', {
+    schema: {
+      tags: ['Admin'],
+      summary: 'Atualiza metadados editáveis de um livro',
+      params: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+      },
+      body: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          reviewNotes: { type: 'string' },
+        },
+      },
+      response: {
+        200: { type: 'object' },
+      },
+    },
+  }, async (req) => {
+    return editBook(req.params.id, req.body)
   })
 
   app.get<{ Params: { id: string } }>('/books/:id/pdf-url', {

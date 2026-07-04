@@ -1,41 +1,116 @@
 import { Link, useSearchParams } from '@remix-run/react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { loadBooks, saveBooks, touchBook, type BookRecord } from '../data/books.js'
+import { LoginCard } from '../components/login-card.js'
+import { listBooks, reviewBook } from '../lib/api.client.js'
+import { clearAdminApiKey, getAdminApiKey, setAdminApiKey } from '../lib/auth.client.js'
 import { formatDate, formatStatus } from '../lib/format.js'
+import type { AdminBookSummary } from '../lib/admin-types.js'
 
 const PAGE_SIZE = 10
+const EXPECTED_USERNAME = import.meta.env.VITE_ADMIN_USERNAME?.trim() || 'abner3003'
+const EXPECTED_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD?.trim() || 'Wefcvb58960906@'
 
 function statusClass(status: string) {
   return status
 }
 
 export default function IndexRoute() {
-  const [books, setBooks] = useState<BookRecord[]>(() => loadBooks())
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
 
-  useEffect(() => {
-    saveBooks(books)
-  }, [books])
-
-  const pagedBooks = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return books.slice(start, start + PAGE_SIZE)
-  }, [books, page])
+  const [sessionKey, setSessionKey] = useState(() => getAdminApiKey())
+  const [books, setBooks] = useState<AdminBookSummary[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [submittingBookId, setSubmittingBookId] = useState<string | null>(null)
 
   const hasPrev = page > 1
-  const hasNext = page * PAGE_SIZE < books.length
+  const hasNext = books.length === PAGE_SIZE
 
-  function reviewBook(bookId: string, action: 'approve' | 'reject') {
-    setBooks((current) =>
-      touchBook(current, bookId, {
-        status: action === 'approve' ? 'approved' : 'rejected',
-        reviewedBy: 'admin-local',
-        reviewedAt: new Date().toISOString(),
-        reviewNotes: action === 'approve' ? 'Approved locally in static SPA mode.' : 'Rejected locally in static SPA mode.',
-      }),
-    )
+  const authReady = Boolean(sessionKey)
+
+  async function fetchBooks() {
+    if (!authReady) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const data = await listBooks({ page, limit: PAGE_SIZE })
+      setBooks(data)
+    } catch (cause) {
+      const status = (cause as { response?: { status?: number } }).response?.status
+
+      if (status === 401) {
+        clearAdminApiKey()
+        setSessionKey('')
+        setAuthError('API key inválida ou expirada. Faça login novamente.')
+        setBooks([])
+        return
+      }
+
+      setError('Não foi possível carregar a listagem do backend.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void fetchBooks()
+  }, [authReady, page])
+
+  const emptyMessage = useMemo(() => {
+    if (loading) return 'Carregando livros...'
+    if (error) return error
+    return 'Nenhum livro encontrado para esta página.'
+  }, [error, loading])
+
+  async function handleLogin(input: { username: string; password: string; apiKey: string }) {
+    if (input.username.trim() !== EXPECTED_USERNAME || input.password !== EXPECTED_PASSWORD) {
+      setAuthError('Usuário ou senha inválidos.')
+      return
+    }
+
+    if (!input.apiKey.trim()) {
+      setAuthError('Informe a API key do backend.')
+      return
+    }
+
+    setAdminApiKey(input.apiKey.trim())
+    setSessionKey(input.apiKey.trim())
+    setAuthError(null)
+    setSearchParams({ page: '1' })
+  }
+
+  function logout() {
+    clearAdminApiKey()
+    setSessionKey('')
+    setBooks([])
+    setError(null)
+    setAuthError(null)
+  }
+
+  async function approveBook(bookId: string) {
+    setSubmittingBookId(bookId)
+    setError(null)
+    try {
+      await reviewBook(bookId, {
+        action: 'approve',
+        reviewed_by: EXPECTED_USERNAME,
+        notes: 'Aprovado pelo portal admin.',
+      })
+      await fetchBooks()
+    } catch {
+      setError('Não foi possível aprovar o livro.')
+    } finally {
+      setSubmittingBookId(null)
+    }
+  }
+
+  if (!authReady) {
+    return <LoginCard error={authError} loading={loading} onSubmit={handleLogin} />
   }
 
   return (
@@ -44,7 +119,8 @@ export default function IndexRoute() {
         <div className="eyebrow">StoryBox Admin</div>
         <h1 className="title">Livros gerados para revisão</h1>
         <p className="subtitle">
-          Portal estático em SPA mode. As alterações ficam salvas apenas neste navegador, sem backend nesta versão.
+          Portal estático com consumo direto do backend em <code>storybox-api.mentebella.com.br</code>. A chave fica em
+          cookie e vai no header `x-admin-key`.
         </p>
 
         <div className="toolbar">
@@ -69,8 +145,13 @@ export default function IndexRoute() {
             >
               Próxima
             </button>
+            <button className="button secondary" type="button" onClick={logout}>
+              Sair
+            </button>
           </nav>
         </div>
+
+        {error ? <p className="error">{error}</p> : null}
       </section>
 
       <section className="card table-wrap">
@@ -85,18 +166,18 @@ export default function IndexRoute() {
             </tr>
           </thead>
           <tbody>
-            {pagedBooks.map((book) => (
+            {books.map((book) => (
               <tr key={book.id}>
                 <td>
                   <div className="stack">
-                    <strong>{book.childName}</strong>
+                    <strong>{book.childName ?? '—'}</strong>
                     <span className="muted">Livro #{book.id}</span>
                   </div>
                 </td>
                 <td>
                   <div className="stack">
-                    <strong>{book.title}</strong>
-                    <span className="muted">{book.referenceMonth}</span>
+                    <strong>{book.title ?? 'Sem título'}</strong>
+                    <span className="muted">{book.referenceMonth ?? '—'}</span>
                   </div>
                 </td>
                 <td>
@@ -110,8 +191,13 @@ export default function IndexRoute() {
                 </td>
                 <td>
                   <div className="actions">
-                    <button className="button" type="button" onClick={() => reviewBook(book.id, 'approve')}>
-                      Aprovar
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => approveBook(book.id)}
+                      disabled={submittingBookId === book.id}
+                    >
+                      {submittingBookId === book.id ? 'Aprovando...' : 'Aprovar'}
                     </button>
 
                     <Link className="button secondary" to={`/books/${book.id}`}>
@@ -130,10 +216,10 @@ export default function IndexRoute() {
               </tr>
             ))}
 
-            {!pagedBooks.length ? (
+            {!books.length ? (
               <tr>
                 <td colSpan={5}>
-                  <p className="muted">Nenhum livro encontrado para esta página.</p>
+                  <p className="muted">{emptyMessage}</p>
                 </td>
               </tr>
             ) : null}
@@ -143,3 +229,4 @@ export default function IndexRoute() {
     </main>
   )
 }
+

@@ -35,6 +35,22 @@ export async function updateBookStatus(
   if (error) throw error
 }
 
+export async function updateBook(
+  id: string,
+  patch: { title?: string; review_notes?: string },
+) {
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('books')
+    .update(patch)
+    .eq('id', id)
+    .select('*, children(name), monthly_collections(subscriber_id, reference_month)')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function listCollections(filters: { status?: CollectionStatus; limit: number; offset: number }) {
   const db = getSupabaseClient()
   let query = db.from('monthly_collections').select('*, children(name, subscriber_id)')

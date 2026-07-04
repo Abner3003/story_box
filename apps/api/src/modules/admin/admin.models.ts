@@ -51,3 +51,8 @@ export interface RegenerateBookBody {
   pageNumbers?: number[]
   notes?: string
 }
+
+export interface UpdateBookBody {
+  title?: string
+  reviewNotes?: string
+}

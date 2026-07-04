@@ -26,7 +26,7 @@ export async function collectChallengeNode(state: OnboardingState): Promise<Part
   if (nextChild) {
     await sendText(
       state.phone,
-      `✨ Anotado!\n\nAgora vamos falar de *${nextChild.name}*: você tem alguma *foto* de um momento especial dele(a) neste mês? Se tiver, me manda! Se não, digite *não*.`,
+      `✨ Anotado!\n\nAgora vamos falar de *${nextChild.name}*: você tem alguma *foto* de um momento especial dele(a) neste mês? Pode ser com a mamãe ou o papai também — se tiver, me manda! Se não, digite *não*.`,
     )
     return { collectionIds, storyQueueIndex: nextQueueIndex, momentPhotoPath: undefined, editIntent: undefined }
   }

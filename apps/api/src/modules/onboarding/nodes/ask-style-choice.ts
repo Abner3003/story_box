@@ -23,10 +23,13 @@ export async function askStyleChoiceNode(state: OnboardingState): Promise<Partia
   }
 
   try {
+    await sendText(
+      state.phone,
+      `🎨 Gerando 3 estilos de ilustração pra *${childName}*! Isso pode levar até 2 minutos — pode aguardar por aqui, eu mando assim que ficar pronto 😊`,
+    )
+
     const { base64, mimeType } = await downloadChildPhoto(state.currentChildPhotoPath)
     const previews = await generateAllStylePreviews(base64, mimeType)
-
-    await sendText(state.phone, `🎨 Gerando 3 estilos de ilustração pra *${childName}*, um momento...`)
 
     const styleOptions: Array<{ id: string; label: string }> = []
     for (const [index, { style, base64Png }] of previews.entries()) {

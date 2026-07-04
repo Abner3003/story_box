@@ -15,7 +15,7 @@ export async function triggerGenerationNode(state: OnboardingState): Promise<Par
 
   await sendText(
     state.phone,
-    `🎨 Perfeito! Seu livro está sendo criado com muito carinho!\n\nAssim que ficar pronto, você recebe a versão digital como pŕevia aqui pelo WhatsApp 📚✨\n\nObrigada por fazer parte do *Storybox*! 💛`,
+    `🎨 Perfeito! Seu livro está sendo criado com muito carinho!\n\nAssim que ficar pronto, você recebe a versão digital como pŕevia aqui pelo WhatsApp 📚✨\n\nParabéns por fazer parte do *Era Uma Vez Eu*! 💛`,
   )
 
   return {}

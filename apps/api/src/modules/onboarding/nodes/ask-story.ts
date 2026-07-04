@@ -6,7 +6,7 @@ export async function askStoryNode(state: OnboardingState): Promise<Partial<Onbo
 
   await sendText(
     state.phone,
-    `📸 Antes de tudo: você tem alguma *foto* de um momento especial de ${name} neste mês? Se tiver, me manda que vou usar pra deixar a ilustração mais especial!\n\nSe não tiver, é só digitar *não*.`,
+    `📸 Antes de tudo: você tem alguma *foto* de um momento especial de ${name} neste mês? Pode ser com a mamãe ou o papai também — se tiver, me manda que vou incluir na história!\n\nSe não tiver, é só digitar *não*.`,
   )
 
   return { storyQueueIndex: 0 }

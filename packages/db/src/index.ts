@@ -14,8 +14,8 @@ export type CollectionStatus =
 export type BookStatus =
   | 'pending'          | 'generating_text'   | 'generating_images'
   | 'assembling'       | 'ready_for_review'  | 'approved'
-  | 'rejected'         | 'delivered_digital' | 'sent_to_print'
-  | 'delivered_physical'
+  | 'rejected'         | 'delivered_digital' | 'awaiting_print_approval'
+  | 'print_approved'   | 'sent_to_print'      | 'delivered_physical'
 
 export type Subscriber = {
   id: string

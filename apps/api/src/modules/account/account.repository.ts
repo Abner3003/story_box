@@ -23,6 +23,8 @@ const STATUS_LABELS: Record<BookStatus, string> = {
   approved: 'aprovado, preparando a entrega ✅',
   rejected: 'sendo refeito com carinho pela nossa equipe 💛',
   delivered_digital: 'entregue digitalmente — já deve estar aqui no seu WhatsApp! 📚',
+  awaiting_print_approval: 'aguardando sua aprovação pra seguir pra impressão 🖨️',
+  print_approved: 'aprovado por você — preparando a entrega com muito carinho 💛',
   sent_to_print: 'enviado para impressão 🖨️',
   delivered_physical: 'entregue na sua casa! 🎉',
 }

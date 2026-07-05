@@ -19,3 +19,20 @@ export async function markBookDelivered(bookId: string) {
     .eq('id', bookId)
   if (error) throw error
 }
+
+// Livro físico esperando a resposta "aprovado?" do assinante antes de seguir
+// pra impressão — usado pelo webhook pra saber que a próxima mensagem desse
+// número é uma resposta de aprovação, não uma nova conversa.
+export async function findBookAwaitingApproval(subscriberId: string) {
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('books')
+    .select('*, monthly_collections!inner(subscriber_id)')
+    .eq('monthly_collections.subscriber_id', subscriberId)
+    .eq('status', 'awaiting_print_approval')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}

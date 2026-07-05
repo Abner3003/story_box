@@ -4,7 +4,8 @@ import { connection } from '@storybox/queues'
 import { getBookById } from '../modules/admin/admin.repository.js'
 import { getSubscriberById } from '../modules/payment/payment.repository.js'
 import { getSignedAssetUrl, markBookDelivered } from '../modules/delivery/delivery.repository.js'
-import { sendText, sendDocument } from '../lib/whatsapp.js'
+import { updateBookStatus } from '../modules/admin/admin.repository.js'
+import { sendText, sendDocument, sendButtons } from '../lib/whatsapp.js'
 
 interface DeliverBookJobData {
   bookId: string
@@ -30,6 +31,17 @@ const worker = new Worker<DeliverBookJobData>(
     await sendDocument(subscriber.phone, pdfUrl, `${title}.pdf`, title)
 
     await markBookDelivered(bookId)
+
+    // Plano físico (qualquer plano que não seja o digital-only) — antes de
+    // seguir pra impressão, confirma com a família que essa versão está
+    // aprovada.
+    if (subscriber.plan !== 'digital') {
+      await sendButtons(subscriber.phone, 'Esse livro ficou aprovado pra impressão? 🖨️', [
+        { id: 'print_approval_yes', title: 'Sim, aprovado!' },
+        { id: 'print_approval_no', title: 'Não, quero ajustar' },
+      ])
+      await updateBookStatus(bookId, { status: 'awaiting_print_approval' })
+    }
 
     console.log(`[delivery] livro ${bookId} entregue pro assinante ${subscriberId}`)
   },

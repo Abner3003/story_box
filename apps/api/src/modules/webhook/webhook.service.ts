@@ -3,6 +3,7 @@ import { findSubscriberByPhone, claimMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
 import { resumeWeeklyCollection, isInWeeklyCollection } from '../onboarding/weekly-collection.service.js'
 import { startAccountMenu, resumeAccountMenu, isInAccountMenu } from '../onboarding/account.service.js'
+import { findPendingPrintApproval, handlePrintApprovalReply } from '../delivery/print-approval.service.js'
 import { showTypingIndicator } from '../../lib/whatsapp.js'
 import { runExclusive } from '../../lib/phone-lock.js'
 
@@ -65,6 +66,12 @@ export async function handleWhatsAppWebhook(
 
           if (!subscriber) {
             await startOnboarding(phone, { simulate: opts.simulate, name: contactName })
+            return
+          }
+
+          const pendingApproval = await findPendingPrintApproval(subscriber.id)
+          if (pendingApproval) {
+            await handlePrintApprovalReply(pendingApproval.id, subscriber.phone, content)
             return
           }
 

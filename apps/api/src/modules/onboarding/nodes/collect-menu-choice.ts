@@ -13,6 +13,9 @@ export async function collectMenuChoiceNode(state: OnboardingState): Promise<Par
   if (trimmed === 'menu_address' || trimmed === '2') {
     return { menuChoice: 'address', menuChoiceInvalid: false }
   }
+  if (trimmed === 'menu_new_book' || trimmed === '3') {
+    return { menuChoice: 'new_book', menuChoiceInvalid: false }
+  }
 
   await sendText(state.phone, '❌ Não entendi. Escolha uma das opções abaixo:')
   await sendButtons(state.phone, 'Como posso te ajudar?', MENU_BUTTONS)

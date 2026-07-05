@@ -5,6 +5,7 @@ import type { OnboardingState } from '../onboarding.state.js'
 const MENU_BUTTONS = [
   { id: 'menu_help', title: 'Ajuda' },
   { id: 'menu_address', title: 'Alterar endereço' },
+  { id: 'menu_new_book', title: 'Gerar outro livro' },
 ]
 
 export async function askMenuNode(state: OnboardingState): Promise<Partial<OnboardingState>> {

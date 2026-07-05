@@ -32,6 +32,20 @@ export async function collectPlanChoiceNode(state: OnboardingState): Promise<Par
     return { planChoiceInvalid: true }
   }
 
+  // Assinante já existe (ex: comprando outro livro pelo menu de conta) — não
+  // sobrescreve plan/is_recurring/status da assinatura principal, só usa o
+  // plano escolhido pra este pagamento pontual. E-mail/CPF já estão salvos,
+  // não precisa pedir de novo.
+  if (state.subscriberId) {
+    return {
+      plan: selectedPlan.name,
+      abacatepayPlanId: selectedPlan.id,
+      abacatepayPlanName: selectedPlan.name,
+      planIsRecurring: selectedPlan.isRecurring,
+      planChoiceInvalid: false,
+    }
+  }
+
   const subscriberId = await upsertSubscriber({
     phone: state.phone,
     plan: selectedPlan.name,

@@ -66,19 +66,33 @@ export async function describeMomentScene(base64Image: string, mimeType: string)
   return response.choices[0]?.message?.content?.trim() ?? ''
 }
 
-const FAMILY_SYSTEM_PROMPT = `Você descreve a aparência de adultos numa foto de família, pra alimentar prompts de ilustração de um livro infantil.
-Descreva em inglês, numa frase por pessoa adulta visível na foto (mãe, pai, etc.), características físicas estáveis: cor e tipo de cabelo, tom de pele, aproximação de idade. Não descreva roupas (isso muda por cena).
-Se não houver adultos visíveis ou a foto não for clara, retorne uma string vazia.
-Retorne apenas a descrição, sem texto extra, sem markdown.`
+export interface FamilyPhotoAnalysis {
+  // rótulos em português pra confirmar com a família (ex: ["papai", "mamãe"])
+  recognized: string[]
+  // descrição em português de alguém que apareceu na foto mas cujo papel
+  // não ficou claro (geralmente uma criança) — null se não houver ninguém assim
+  unclearNote: string | null
+  // descrição em inglês, pronta pra entrar no prompt de ilustração
+  illustrationDescription: string
+}
 
-export async function describeFamilyAppearance(base64Image: string, mimeType: string): Promise<string> {
+const FAMILY_ANALYSIS_PROMPT = `Você analisa fotos de família para alimentar a criação de um livro infantil personalizado.
+A criança que é a protagonista do livro já tem perfil visual próprio — não a descreva aqui (ignore quem for claramente o bebê/criança foco da foto, se estiver evidente pelo contexto).
+Para cada OUTRA pessoa na foto (pai, mãe, avó, avô, irmão, irmã, etc.):
+- Se conseguir identificar o papel familiar com razoável confiança, inclua um rótulo curto em português em "recognized" (ex: "papai", "mamãe", "irmão mais velho", "irmã caçula").
+- Se houver alguém (geralmente uma criança) cuja relação/papel você NÃO tem como determinar com confiança pela foto, descreva essa pessoa em "unclear_note", em português, de forma natural e breve (ex: "um menino de aproximadamente 5 anos"). Preste atenção a sinais de gênero — corte de cabelo curto costuma indicar menino, não assuma menina por padrão. Se não houver ninguém incerto, "unclear_note" deve ser null.
+Em "illustration_description", escreva em inglês, uma frase por pessoa RECONHECIDA (papel + gênero explícito, ex: "The father"/"The mother"/"The older brother" + cor/tipo de cabelo + tom de pele + idade aproximada). Não descreva roupas. Não inclua a pessoa de "unclear_note" aqui.
+Se não houver ninguém além da protagonista visível ou a foto não for clara, "recognized" deve ser [] e "illustration_description" deve ser "".
+Responda apenas em JSON, sem markdown: {"recognized": string[], "unclear_note": string | null, "illustration_description": string}`
+
+export async function analyzeFamilyPhoto(base64Image: string, mimeType: string): Promise<FamilyPhotoAnalysis> {
   const openai = client()
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
-    max_tokens: 200,
+    max_tokens: 400,
     messages: [
-      { role: 'system', content: FAMILY_SYSTEM_PROMPT },
+      { role: 'system', content: FAMILY_ANALYSIS_PROMPT },
       {
         role: 'user',
         content: [
@@ -86,11 +100,23 @@ export async function describeFamilyAppearance(base64Image: string, mimeType: st
             type: 'image_url',
             image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: 'high' },
           },
-          { type: 'text', text: 'Describe the adults in this family photo.' },
+          { type: 'text', text: 'Analyze every family member in this photo, including siblings.' },
         ],
       },
     ],
   })
 
-  return response.choices[0]?.message?.content?.trim() ?? ''
+  const raw = response.choices[0]?.message?.content ?? ''
+  const json = raw.replace(/```json\n?|\n?```/g, '').trim()
+
+  try {
+    const parsed = JSON.parse(json)
+    return {
+      recognized: Array.isArray(parsed.recognized) ? parsed.recognized : [],
+      unclearNote: typeof parsed.unclear_note === 'string' ? parsed.unclear_note : null,
+      illustrationDescription: typeof parsed.illustration_description === 'string' ? parsed.illustration_description : '',
+    }
+  } catch {
+    return { recognized: [], unclearNote: null, illustrationDescription: '' }
+  }
 }

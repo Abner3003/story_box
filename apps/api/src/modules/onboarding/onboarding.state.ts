@@ -229,7 +229,7 @@ export const OnboardingAnnotation = Annotation.Root({
   }),
 
   // ── Menu de conta (assinante já ativo, sem fluxo pendente) ────
-  menuChoice: Annotation<'help' | 'address' | undefined>({
+  menuChoice: Annotation<'help' | 'address' | 'new_book' | undefined>({
     reducer: (_, b) => b,
     default: () => undefined,
   }),

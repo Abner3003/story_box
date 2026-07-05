@@ -221,6 +221,16 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => 0,
   }),
+
+  // ── Menu de conta (assinante já ativo, sem fluxo pendente) ────
+  menuChoice: Annotation<'help' | 'address' | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  menuChoiceInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
 })
 
 export type OnboardingState = typeof OnboardingAnnotation.State

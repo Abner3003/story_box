@@ -13,6 +13,12 @@ function statusClass(status: string) {
   return status || 'pending'
 }
 
+function getBookId(book: AdminBookSummary & Record<string, unknown>) {
+  const fallbackId = book.book_id ?? book.bookId
+  const id = typeof book.id === 'string' && book.id.trim() ? book.id : fallbackId
+  return typeof id === 'string' && id.trim() ? id : null
+}
+
 export default function IndexRoute() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
@@ -156,55 +162,63 @@ export default function IndexRoute() {
             </tr>
           </thead>
           <tbody>
-            {books.map((book) => (
-              <tr key={book.id}>
-                <td>
-                  <div className="stack">
-                    <strong>{book.childName ?? '—'}</strong>
-                    <span className="muted">Livro #{book.id}</span>
-                  </div>
-                </td>
-                <td>
-                  <div className="stack">
-                    <strong>{book.title ?? 'Sem título'}</strong>
-                    <span className="muted">{book.referenceMonth ?? '—'}</span>
-                  </div>
-                </td>
-                <td>
-                  <span className={`status ${statusClass(book.status)}`}>{formatStatus(book.status)}</span>
-                </td>
-                <td>
-                  <div className="stack">
-                    <span>{formatDate(book.updatedAt)}</span>
-                    <span className="muted">{formatDate(book.createdAt)}</span>
-                  </div>
-                </td>
-                <td>
-                  <div className="actions">
-                    <button
-                      className="button"
-                      type="button"
-                      onClick={() => approveBook(book.id)}
-                      disabled={submittingBookId === book.id}
-                    >
-                      {submittingBookId === book.id ? 'Aprovando...' : 'Aprovar'}
-                    </button>
+            {books.map((book) => {
+              const bookId = getBookId(book)
 
-                    <Link className="button secondary" to={`/books/${book.id}`}>
-                      Revisar página
-                    </Link>
+              if (!bookId) {
+                return null
+              }
 
-                    {book.pdfUrl ? (
-                      <a className="button secondary" href={book.pdfUrl} target="_blank" rel="noreferrer">
-                        Download PDF
-                      </a>
-                    ) : (
-                      <span className="pill">PDF indisponível</span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+              return (
+                <tr key={bookId}>
+                  <td>
+                    <div className="stack">
+                      <strong>{book.childName ?? '—'}</strong>
+                      <span className="muted">Livro #{bookId}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="stack">
+                      <strong>{book.title ?? 'Sem título'}</strong>
+                      <span className="muted">{book.referenceMonth ?? '—'}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status ${statusClass(book.status)}`}>{formatStatus(book.status)}</span>
+                  </td>
+                  <td>
+                    <div className="stack">
+                      <span>{formatDate(book.updatedAt)}</span>
+                      <span className="muted">{formatDate(book.createdAt)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="actions">
+                      <button
+                        className="button"
+                        type="button"
+                        onClick={() => approveBook(bookId)}
+                        disabled={submittingBookId === bookId}
+                      >
+                        {submittingBookId === bookId ? 'Aprovando...' : 'Aprovar'}
+                      </button>
+
+                      <Link className="button secondary" to={`/books/${bookId}`}>
+                        Revisar página
+                      </Link>
+
+                      {book.pdfUrl ? (
+                        <a className="button secondary" href={book.pdfUrl} target="_blank" rel="noreferrer">
+                          Download PDF
+                        </a>
+                      ) : (
+                        <span className="pill">PDF indisponível</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
 
             {!books.length ? (
               <tr>

@@ -17,6 +17,60 @@ const paginationQuerystring = {
   },
 } as const
 
+// O Fastify serializa a resposta pelo schema declarado abaixo — qualquer
+// campo que não esteja listado aqui é silenciosamente descartado, mesmo que
+// o service retorne o valor certo. Por isso precisa listar tudo que
+// AdminBookSummary/AdminBookDetail (admin.models.ts) realmente têm.
+const bookSummarySchema = {
+  type: 'object',
+  properties: {
+    id:             { type: 'string' },
+    status:         { type: 'string' },
+    title:          { type: 'string' },
+    childName:      { type: 'string' },
+    referenceMonth: { type: 'string' },
+    pdfUrl:         { type: ['string', 'null'] },
+    reviewedBy:     { type: 'string' },
+    reviewedAt:     { type: 'string' },
+    reviewNotes:    { type: 'string' },
+    createdAt:      { type: 'string' },
+    updatedAt:      { type: 'string' },
+  },
+} as const
+
+const bookDetailSchema = {
+  type: 'object',
+  properties: {
+    ...bookSummarySchema.properties,
+    collectionId: { type: 'string' },
+    childId:      { type: 'string' },
+    storyJson: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        moral: { type: 'string' },
+        pages: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              page_number:         { type: 'integer' },
+              text:                { type: 'string' },
+              illustration_prompt: { type: 'string' },
+              image_storage_path:  { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const
+
+const collectionSummarySchema = {
+  type: 'object',
+  additionalProperties: true,
+} as const
+
 export const adminRouter: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', async (req, reply) => {
     const apiKey = process.env.ADMIN_API_KEY
@@ -35,7 +89,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
       summary: 'Lista livros para curadoria',
       querystring: paginationQuerystring,
       response: {
-        200: { type: 'array', items: { type: 'object' } },
+        200: { type: 'array', items: bookSummarySchema },
       },
     },
   }, async (req) => {
@@ -53,7 +107,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
         required: ['id'],
       },
       response: {
-        200: { type: 'object' },
+        200: bookDetailSchema,
       },
     },
   }, async (req) => {
@@ -78,7 +132,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
         },
       },
       response: {
-        200: { type: 'object' },
+        200: bookDetailSchema,
       },
     },
   }, async (req) => {
@@ -185,7 +239,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
       summary: 'Lista colecoes mensais',
       querystring: paginationQuerystring,
       response: {
-        200: { type: 'array', items: { type: 'object' } },
+        200: { type: 'array', items: collectionSummarySchema },
       },
     },
   }, async (req) => {

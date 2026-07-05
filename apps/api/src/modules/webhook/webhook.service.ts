@@ -2,6 +2,7 @@ import type { WhatsAppWebhookPayload } from './webhook.models.js'
 import { findSubscriberByPhone, claimMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
 import { resumeWeeklyCollection, isInWeeklyCollection } from '../onboarding/weekly-collection.service.js'
+import { startAccountMenu, resumeAccountMenu, isInAccountMenu } from '../onboarding/account.service.js'
 import { showTypingIndicator } from '../../lib/whatsapp.js'
 import { runExclusive } from '../../lib/phone-lock.js'
 
@@ -55,6 +56,11 @@ export async function handleWhatsAppWebhook(
             return
           }
 
+          if (await isInAccountMenu(phone)) {
+            await resumeAccountMenu(phone, content)
+            return
+          }
+
           const subscriber = await findSubscriberByPhone(phone)
 
           if (!subscriber) {
@@ -62,7 +68,7 @@ export async function handleWhatsAppWebhook(
             return
           }
 
-          // TODO: enfileirar no inboundQueue para o agente LangGraph processar
+          await startAccountMenu(subscriber)
         })
       }
     }

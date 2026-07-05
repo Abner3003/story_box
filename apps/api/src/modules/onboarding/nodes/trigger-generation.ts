@@ -9,6 +9,9 @@ export async function triggerGenerationNode(state: OnboardingState): Promise<Par
         subscriberId: state.subscriberId,
         childId:      state.childIds[state.featuredChildIndices[i]],
         collectionId,
+      }, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 15_000 },
       }),
     ),
   )

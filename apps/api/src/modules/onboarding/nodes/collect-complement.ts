@@ -1,6 +1,7 @@
 import { interrupt } from '@langchain/langgraph'
 import { sendText } from '../../../lib/whatsapp.js'
 import { checkEditIntent } from '../edit-intent.js'
+import { upsertDeliveryAddress } from '../onboarding.repository.js'
 import type { AddressInput, OnboardingState } from '../onboarding.state.js'
 
 export async function collectComplementNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
@@ -19,6 +20,20 @@ export async function collectComplementNode(state: OnboardingState): Promise<Par
     ...state.addressDraft,
     number: state.addressNumber,
     complement,
+  }
+
+  if (state.subscriberId) {
+    await upsertDeliveryAddress({
+      subscriber_id: state.subscriberId,
+      recipient_name: state.subscriberName || state.phone,
+      street: address.street,
+      number: address.number,
+      complement: address.complement,
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      zip_code: address.zip,
+    })
   }
 
   await sendText(state.phone, '✅ Endereço salvo!')

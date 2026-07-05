@@ -32,6 +32,41 @@ export async function upsertSubscriber(data: {
   return row.id as string
 }
 
+export async function upsertDeliveryAddress(data: {
+  subscriber_id: string
+  recipient_name: string
+  street: string
+  number: string
+  complement?: string
+  neighborhood: string
+  city: string
+  state: string
+  zip_code: string
+}) {
+  const db = getSupabaseClient()
+  const { data: existing, error: findError } = await db
+    .from('delivery_addresses')
+    .select('id')
+    .eq('subscriber_id', data.subscriber_id)
+    .eq('is_default', true)
+    .maybeSingle()
+  if (findError) throw findError
+
+  if (existing) {
+    const { error } = await db.from('delivery_addresses').update(data).eq('id', existing.id)
+    if (error) throw error
+    return existing.id as string
+  }
+
+  const { data: row, error } = await db
+    .from('delivery_addresses')
+    .insert({ ...data, is_default: true })
+    .select('id')
+    .single()
+  if (error) throw error
+  return row.id as string
+}
+
 export async function updateSubscriberContact(id: string, data: { email?: string; cpf?: string }) {
   const db = getSupabaseClient()
   const { error } = await db

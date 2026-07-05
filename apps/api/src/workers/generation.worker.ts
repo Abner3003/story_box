@@ -73,14 +73,16 @@ const worker = new Worker<GenerateBookJobData>(
       llm_model: 'gpt-4o',
     })
 
-    const pagesWithImages = await Promise.all(
-      story.pages.map(async (page) => {
-        const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId)
-        const base64 = await generateImage(prompt)
-        const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
-        return { page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') }
-      }),
-    )
+    // Sequencial, não Promise.all: a conta da OpenAI tem um limite baixo de
+    // gerações de imagem por minuto (ex: 5/min) — disparar as 8 páginas de
+    // uma vez estoura o limite e derruba o job com 429 no meio do livro.
+    const pagesWithImages: Array<{ page: typeof story.pages[number] & { image_storage_path: string }; imageBuffer: Buffer }> = []
+    for (const page of story.pages) {
+      const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId)
+      const base64 = await generateImage(prompt)
+      const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
+      pagesWithImages.push({ page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') })
+    }
 
     const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId)
     const coverBase64 = await generateImage(coverPrompt)

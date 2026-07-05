@@ -10,7 +10,7 @@ import type {
   UpdateBookBody,
 } from './admin.models.js'
 import { listBooks, getBookById, updateBookStatus, updateBook, listCollections } from './admin.repository.js'
-import { getSignedPdfUrl } from '../delivery/delivery.repository.js'
+import { getSignedAssetUrl } from '../delivery/delivery.repository.js'
 
 const DEFAULT_LIMIT = 20
 
@@ -26,7 +26,8 @@ async function mapBookSummary(book: RawBook): Promise<AdminBookSummary> {
     title: book.title ?? undefined,
     childName: book.children?.name ?? undefined,
     referenceMonth: book.monthly_collections?.reference_month ?? undefined,
-    pdfUrl: book.pdf_storage_path ? await getSignedPdfUrl(book.pdf_storage_path) : null,
+    pdfUrl: book.pdf_storage_path ? await getSignedAssetUrl(book.pdf_storage_path) : null,
+    coverImageUrl: book.cover_image_storage_path ? await getSignedAssetUrl(book.cover_image_storage_path) : null,
     reviewedBy: book.reviewed_by ?? undefined,
     reviewedAt: book.reviewed_at ?? undefined,
     reviewNotes: book.review_notes ?? undefined,
@@ -37,11 +38,22 @@ async function mapBookSummary(book: RawBook): Promise<AdminBookSummary> {
 
 async function mapBookDetail(book: Awaited<ReturnType<typeof getBookById>>): Promise<AdminBookDetail> {
   const summary = await mapBookSummary(book as RawBook)
+  const storyJson = book.story_json as AdminBookDetail['storyJson']
+
+  const pages = storyJson
+    ? await Promise.all(
+        storyJson.pages.map(async (page) => ({
+          ...page,
+          imageUrl: page.image_storage_path ? await getSignedAssetUrl(page.image_storage_path) : null,
+        })),
+      )
+    : undefined
+
   return {
     ...summary,
     collectionId: book.collection_id,
     childId: book.child_id,
-    storyJson: book.story_json as AdminBookDetail['storyJson'],
+    storyJson: storyJson ? { ...storyJson, pages: pages! } : undefined,
   }
 }
 

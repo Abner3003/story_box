@@ -172,6 +172,12 @@ export const OnboardingAnnotation = Annotation.Root({
     default: () => false,
   }),
 
+  // ── Foto da família (uma vez, no onboarding) ──────────────────
+  familyPhotoInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
+
   // ── Foto ───────────────────────────────────────────────────
   photoInvalid: Annotation<boolean>({
     reducer: (_, b) => b,

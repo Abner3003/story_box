@@ -15,6 +15,7 @@ export type StoryPage = {
   text: string
   illustration_prompt: string
   image_storage_path?: string
+  imageUrl?: string | null
 }
 
 export type AdminBookSummary = {
@@ -24,6 +25,7 @@ export type AdminBookSummary = {
   childName?: string
   referenceMonth?: string
   pdfUrl?: string | null
+  coverImageUrl?: string | null
   reviewedBy?: string
   reviewedAt?: string
   reviewNotes?: string
@@ -56,5 +58,10 @@ export type ReviewBookBody = {
 export type UpdateBookBody = {
   title?: string
   reviewNotes?: string
+}
+
+export type RegenerateBookBody = {
+  pageNumbers?: number[]
+  notes?: string
 }
 

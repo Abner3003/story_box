@@ -25,7 +25,7 @@ export type StyleId = 'watercolor' | 'cartoon3d' | 'flat';
  *  and warm medium skin tone, named Arthur.
  *  Scene: A toddler sitting cross-legged on a colorful rug surrounded by wooden blocks..."
  */
-export declare function buildIllustrationPrompt(scenePrompt: string, childName: string, visualProfile: VisualProfile, styleId?: string): string;
+export declare function buildIllustrationPrompt(scenePrompt: string, childName: string, visualProfile: VisualProfile, styleId?: string, familyDescription?: string): string;
 /**
  * Versão simplificada para quando não temos visual profile ainda
  * Usado no primeiro livro antes da foto ser processada
@@ -34,5 +34,5 @@ export declare function buildIllustrationPromptBasic(scenePrompt: string, childN
 /**
  * Prompt de capa — usa a primeira ilustração como referência
  */
-export declare function buildCoverPrompt(bookTitle: string, childName: string, visualProfile: VisualProfile, styleId?: string): string;
+export declare function buildCoverPrompt(bookTitle: string, childName: string, visualProfile: VisualProfile, styleId?: string, familyDescription?: string): string;
 //# sourceMappingURL=prompt_builder.d.ts.map

@@ -29,6 +29,8 @@ export type Subscriber = {
   abacatepay_plan_id?: string
   is_recurring: boolean
   last_weekly_kickoff_sent_at?: string
+  family_photo_path?: string
+  family_description?: string
   created_at: string
   updated_at: string
 }
@@ -299,6 +301,7 @@ export function getSupabaseClient(): SupabaseClient<Database> {
 export const StoragePaths = {
   childPhoto:      (childId: string, month: string) => `children/${childId}/photos/${month}.jpg`,
   momentPhoto:     (childId: string, period: string) => `children/${childId}/moments/${period}.jpg`,
+  familyPhoto:     (subscriberId: string)           => `subscribers/${subscriberId}/family.jpg`,
   stylePreview:    (childId: string, styleId: string) => `children/${childId}/style-previews/${styleId}.png`,
   bookPdf:         (bookId: string)                 => `books/${bookId}/book.pdf`,
   bookCover:       (bookId: string)                 => `books/${bookId}/cover.png`,

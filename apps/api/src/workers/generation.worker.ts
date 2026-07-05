@@ -13,8 +13,7 @@ import {
 import { generateStory, calculateAge } from '../lib/story.js'
 import { generateImage } from '../lib/illustration.js'
 import { assembleBookPdf } from '../lib/pdf.js'
-import { describeMomentScene } from '../lib/vision.js'
-import { downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
+import { getSubscriberById } from '../modules/payment/payment.repository.js'
 
 interface GenerateBookJobData {
   subscriberId: string
@@ -45,16 +44,14 @@ const worker = new Worker<GenerateBookJobData>(
     const styleId = visualProfile.chosen_style ?? 'watercolor'
     const childAge = calculateAge(child.birth_date)
 
-    let momentText = collection.moment_text ?? ''
-    if (collection.photo_storage_path) {
-      try {
-        const { base64, mimeType } = await downloadChildPhoto(collection.photo_storage_path)
-        const sceneDescription = await describeMomentScene(base64, mimeType)
-        if (sceneDescription) momentText = `${momentText}\n\nCena da foto enviada: ${sceneDescription}`
-      } catch (err) {
-        console.error(`[generation] falha ao descrever a foto do momento (coleção ${collectionId}):`, err)
-      }
-    }
+    // A foto do momento é só referência visual (armazenada em
+    // collection.photo_storage_path) — não entra na descrição da cena pro
+    // texto/título, senão o que aparece no FUNDO da foto (ex: um elevador)
+    // vira enredo, mesmo sem ter nada a ver com o momento que a família contou.
+    const momentText = collection.moment_text ?? ''
+
+    const subscriber = await getSubscriberById(job.data.subscriberId)
+    const familyDescription = subscriber.family_description || undefined
 
     const story = await generateStory({
       childName: child.name,
@@ -78,13 +75,13 @@ const worker = new Worker<GenerateBookJobData>(
     // uma vez estoura o limite e derruba o job com 429 no meio do livro.
     const pagesWithImages: Array<{ page: typeof story.pages[number] & { image_storage_path: string }; imageBuffer: Buffer }> = []
     for (const page of story.pages) {
-      const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId)
+      const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId, familyDescription)
       const base64 = await generateImage(prompt)
       const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
       pagesWithImages.push({ page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') })
     }
 
-    const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId)
+    const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId, familyDescription)
     const coverBase64 = await generateImage(coverPrompt)
     const coverPath = await uploadBookAsset(StoragePaths.bookCover(book.id), coverBase64, 'image/png')
     const coverImageBuffer = Buffer.from(coverBase64, 'base64')

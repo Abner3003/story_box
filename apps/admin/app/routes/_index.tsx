@@ -154,6 +154,7 @@ export default function IndexRoute() {
         <table>
           <thead>
             <tr>
+              <th>Capa</th>
               <th>Cliente</th>
               <th>Livro</th>
               <th>Status</th>
@@ -171,6 +172,13 @@ export default function IndexRoute() {
 
               return (
                 <tr key={bookId}>
+                  <td>
+                    {book.coverImageUrl ? (
+                      <img className="cover-thumb" src={book.coverImageUrl} alt="" />
+                    ) : (
+                      <div className="cover-thumb-placeholder" />
+                    )}
+                  </td>
                   <td>
                     <div className="stack">
                       <strong>{book.childName ?? '—'}</strong>

@@ -65,3 +65,32 @@ export async function describeMomentScene(base64Image: string, mimeType: string)
 
   return response.choices[0]?.message?.content?.trim() ?? ''
 }
+
+const FAMILY_SYSTEM_PROMPT = `Você descreve a aparência de adultos numa foto de família, pra alimentar prompts de ilustração de um livro infantil.
+Descreva em inglês, numa frase por pessoa adulta visível na foto (mãe, pai, etc.), características físicas estáveis: cor e tipo de cabelo, tom de pele, aproximação de idade. Não descreva roupas (isso muda por cena).
+Se não houver adultos visíveis ou a foto não for clara, retorne uma string vazia.
+Retorne apenas a descrição, sem texto extra, sem markdown.`
+
+export async function describeFamilyAppearance(base64Image: string, mimeType: string): Promise<string> {
+  const openai = client()
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 200,
+    messages: [
+      { role: 'system', content: FAMILY_SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: 'high' },
+          },
+          { type: 'text', text: 'Describe the adults in this family photo.' },
+        ],
+      },
+    ],
+  })
+
+  return response.choices[0]?.message?.content?.trim() ?? ''
+}

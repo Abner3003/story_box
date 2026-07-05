@@ -65,6 +65,22 @@ services:
     networks:
       - internal
 
+  regen-worker:
+    image: ghcr.io/${GHCR_USERNAME}/storybox-api:${IMAGE_TAG:-latest}
+    command: ["node", "apps/api/dist/workers/regen.worker.js"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_started
+    networks:
+      - internal
+
   bull-board:
     image: deadly0/bull-board:latest
     restart: unless-stopped

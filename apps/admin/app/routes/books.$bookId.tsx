@@ -2,7 +2,7 @@ import { Link, useParams } from '@remix-run/react'
 import { useEffect, useState } from 'react'
 
 import { LoginCard } from '../components/login-card.js'
-import { getBook, reviewBook, updateBook } from '../lib/api.client.js'
+import { getBook, reviewBook, updateBook, regenerateBook } from '../lib/api.client.js'
 import { clearAdminApiKey, getAdminApiKey, setAdminApiKey } from '../lib/auth.client.js'
 import { formatDate, formatStatus } from '../lib/format.js'
 import type { AdminBookDetail } from '../lib/admin-types.js'
@@ -19,6 +19,7 @@ export default function BookReviewRoute() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [reviewNotes, setReviewNotes] = useState('')
+  const [regeneratingPage, setRegeneratingPage] = useState<number | 'all' | null>(null)
 
   const authReady = Boolean(sessionKey)
 
@@ -119,6 +120,34 @@ export default function BookReviewRoute() {
     }
   }
 
+  async function regenerateAll() {
+    if (!book) return
+    setRegeneratingPage('all')
+    setError(null)
+    try {
+      await regenerateBook(book.id, {})
+      await loadBook()
+    } catch {
+      setError('Não foi possível reenfileirar a regeração do livro.')
+    } finally {
+      setRegeneratingPage(null)
+    }
+  }
+
+  async function regeneratePage(pageNumber: number) {
+    if (!book) return
+    setRegeneratingPage(pageNumber)
+    setError(null)
+    try {
+      await regenerateBook(book.id, { pageNumbers: [pageNumber] })
+      await loadBook()
+    } catch {
+      setError(`Não foi possível reenfileirar a regeração da página ${pageNumber}.`)
+    } finally {
+      setRegeneratingPage(null)
+    }
+  }
+
   if (!authReady) {
     return <LoginCard error={authError} loading={loading} onSubmit={handleLogin} />
   }
@@ -184,6 +213,10 @@ export default function BookReviewRoute() {
           </div>
         </div>
 
+        {book.coverImageUrl ? (
+          <img className="cover-image" src={book.coverImageUrl} alt={`Capa de ${book.title ?? 'livro'}`} />
+        ) : null}
+
         {error ? <p className="error">{error}</p> : null}
       </section>
 
@@ -216,6 +249,9 @@ export default function BookReviewRoute() {
             </button>
             <button className="button danger" type="button" onClick={reject} disabled={saving}>
               Rejeitar
+            </button>
+            <button className="button secondary" type="button" onClick={regenerateAll} disabled={regeneratingPage !== null}>
+              {regeneratingPage === 'all' ? 'Reenfileirando...' : 'Regenerar livro inteiro'}
             </button>
           </div>
         </section>
@@ -259,7 +295,20 @@ export default function BookReviewRoute() {
             <article className="page-card" key={page.page_number}>
               <div className="page-meta">
                 <strong>Página {page.page_number}</strong>
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={() => regeneratePage(page.page_number)}
+                  disabled={regeneratingPage !== null}
+                >
+                  {regeneratingPage === page.page_number ? 'Reenfileirando...' : 'Regenerar página'}
+                </button>
               </div>
+              {page.imageUrl ? (
+                <img className="page-image" src={page.imageUrl} alt={`Ilustração da página ${page.page_number}`} />
+              ) : (
+                <div className="page-image-placeholder">Imagem ainda não gerada</div>
+              )}
               <p>{page.text}</p>
               <p className="muted">{page.illustration_prompt}</p>
             </article>

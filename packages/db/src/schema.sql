@@ -15,6 +15,8 @@ CREATE TABLE subscribers (
   abacatepay_plan_id      TEXT,
   is_recurring            BOOLEAN NOT NULL DEFAULT false, -- assinatura (true) vs livro avulso (false)
   last_weekly_kickoff_sent_at TIMESTAMPTZ, -- último convite semanal de coleta enviado (assinantes)
+  family_photo_path      TEXT, -- foto da família (uma vez, no onboarding)
+  family_description     TEXT, -- aparência da família extraída via Vision, pra injetar nos prompts de ilustração
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );

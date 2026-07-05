@@ -3,7 +3,7 @@ import { Worker } from 'bullmq'
 import { connection } from '@storybox/queues'
 import { getBookById } from '../modules/admin/admin.repository.js'
 import { getSubscriberById } from '../modules/payment/payment.repository.js'
-import { getSignedPdfUrl, markBookDelivered } from '../modules/delivery/delivery.repository.js'
+import { getSignedAssetUrl, markBookDelivered } from '../modules/delivery/delivery.repository.js'
 import { sendText, sendDocument } from '../lib/whatsapp.js'
 
 interface DeliverBookJobData {
@@ -23,7 +23,7 @@ const worker = new Worker<DeliverBookJobData>(
     }
 
     const subscriber = await getSubscriberById(subscriberId)
-    const pdfUrl = await getSignedPdfUrl(book.pdf_storage_path)
+    const pdfUrl = await getSignedAssetUrl(book.pdf_storage_path)
     const title = book.title ?? 'Seu livro'
 
     await sendText(subscriber.phone, `📚 *${title}* está pronto! Aqui está a versão digital:`)

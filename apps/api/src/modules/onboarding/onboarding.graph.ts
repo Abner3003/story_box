@@ -22,6 +22,8 @@ import { askChildSelectionNode } from './nodes/ask-child-selection.js'
 import { collectChildSelectionNode } from './nodes/collect-child-selection.js'
 import { askConsentNode } from './nodes/ask-consent.js'
 import { collectConsentNode } from './nodes/collect-consent.js'
+import { askFamilyPhotoNode } from './nodes/ask-family-photo.js'
+import { collectFamilyPhotoNode } from './nodes/collect-family-photo.js'
 import { askPhotoNode } from './nodes/ask-photo.js'
 import { collectPhotoNode } from './nodes/collect-photo.js'
 import { askStyleChoiceNode } from './nodes/ask-style-choice.js'
@@ -69,6 +71,8 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('collect_child_selection',     collectChildSelectionNode)
   .addNode('ask_consent',                 askConsentNode)
   .addNode('collect_consent',             collectConsentNode)
+  .addNode('ask_family_photo',            askFamilyPhotoNode)
+  .addNode('collect_family_photo',        collectFamilyPhotoNode)
   .addNode('ask_photo',                   askPhotoNode)
   .addNode('collect_photo',               collectPhotoNode)
   .addNode('ask_style_choice',            askStyleChoiceNode)
@@ -128,7 +132,14 @@ const graph = new StateGraph(OnboardingAnnotation)
     const edit = editRoute(state)
     if (edit) return edit
     if (state.consentInvalid) return 'collect_consent'
-    return state.imageConsentAccepted ? 'ask_photo' : '__end__'
+    return state.imageConsentAccepted ? 'ask_family_photo' : '__end__'
+  })
+
+  .addEdge('ask_family_photo',     'collect_family_photo')
+  .addConditionalEdges('collect_family_photo', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    return state.familyPhotoInvalid ? 'collect_family_photo' : 'ask_photo'
   })
 
   .addEdge('ask_photo',            'collect_photo')

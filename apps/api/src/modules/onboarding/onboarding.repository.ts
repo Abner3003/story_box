@@ -184,6 +184,28 @@ export async function uploadMomentPhoto(childId: string, base64: string, mimeTyp
   return path
 }
 
+export async function uploadFamilyPhoto(subscriberId: string, base64: string, mimeType: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = StoragePaths.familyPhoto(subscriberId)
+  const buffer = Buffer.from(base64, 'base64')
+
+  const { error } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true })
+  if (error) throw error
+
+  return path
+}
+
+export async function saveFamilyAppearance(subscriberId: string, photoPath: string, description: string) {
+  const db = getSupabaseClient()
+  const { error } = await db
+    .from('subscribers')
+    .update({ family_photo_path: photoPath, family_description: description })
+    .eq('id', subscriberId)
+  if (error) throw error
+}
+
 export async function downloadChildPhoto(path: string): Promise<{ base64: string; mimeType: string }> {
   const db = getSupabaseClient()
   const { data, error } = await db.storage.from(ASSETS_BUCKET).download(path)

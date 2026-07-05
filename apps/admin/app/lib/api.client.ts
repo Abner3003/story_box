@@ -7,6 +7,7 @@ import type {
   ListBooksQuery,
   ReviewBookBody,
   UpdateBookBody,
+  RegenerateBookBody,
 } from './admin-types.js'
 
 const apiBaseURL =
@@ -55,6 +56,14 @@ export async function reviewBook(bookId: string, body: ReviewBookBody) {
 
 export async function updateBook(bookId: string, body: UpdateBookBody) {
   const { data } = await adminApi.patch<AdminBookDetail>(`/admin/books/${bookId}`, body)
+  return data
+}
+
+export async function regenerateBook(bookId: string, body: RegenerateBookBody = {}) {
+  const { data } = await adminApi.post<{ status: string; pagesQueued: number }>(
+    `/admin/books/${bookId}/regenerate`,
+    body,
+  )
   return data
 }
 

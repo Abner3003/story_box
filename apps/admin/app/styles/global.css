@@ -305,6 +305,53 @@ tr:hover td {
   align-items: center;
 }
 
+.cover-image {
+  width: 100%;
+  max-width: 320px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  margin-top: 16px;
+}
+
+.cover-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.cover-thumb-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px dashed var(--line);
+  background: rgba(151, 166, 198, 0.08);
+}
+
+.page-image {
+  width: 100%;
+  max-width: 280px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  margin: 10px 0;
+}
+
+.page-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1;
+  margin: 10px 0;
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .stack {
   display: grid;
   gap: 12px;

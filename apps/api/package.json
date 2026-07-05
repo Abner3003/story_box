@@ -10,6 +10,7 @@
     "worker:generation": "tsx watch src/workers/generation.worker.ts",
     "worker:scheduler": "tsx watch src/workers/scheduler.worker.ts",
     "worker:delivery": "tsx watch src/workers/delivery.worker.ts",
+    "worker:regen": "tsx watch src/workers/regen.worker.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

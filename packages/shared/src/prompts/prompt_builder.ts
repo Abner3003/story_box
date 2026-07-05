@@ -72,11 +72,13 @@ export function buildIllustrationPrompt(
   childName: string,
   visualProfile: VisualProfile,
   styleId?: string,
+  familyDescription?: string,
 ): string {
   const characterLine = `Protagonist: ${visualProfile.raw_description}, named ${childName}.`
+  const familyLine     = familyDescription ? `Family members (when present in the scene): ${familyDescription}` : undefined
   const sceneLine     = `Scene: ${scenePrompt}`
 
-  return [stylePrefix(styleId) + '.', characterLine, sceneLine].join('\n')
+  return [stylePrefix(styleId) + '.', characterLine, familyLine, sceneLine].filter(Boolean).join('\n')
 }
 
 /**
@@ -103,12 +105,14 @@ export function buildCoverPrompt(
   childName: string,
   visualProfile: VisualProfile,
   styleId?: string,
+  familyDescription?: string,
 ): string {
   return [
     stylePrefix(styleId) + ', book cover composition.',
     `Protagonist: ${visualProfile.raw_description}, named ${childName}.`,
+    familyDescription ? `Family members (when present in the scene): ${familyDescription}` : undefined,
     `Scene: A warm, inviting children's book cover featuring ${childName} as the hero,`,
     `centered composition, title space at top, magical and adventurous atmosphere,`,
     `rich colors, the child looking happy and confident.`,
-  ].join('\n')
+  ].filter(Boolean).join('\n')
 }

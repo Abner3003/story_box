@@ -53,10 +53,11 @@ function stylePrefix(styleId) {
  *  and warm medium skin tone, named Arthur.
  *  Scene: A toddler sitting cross-legged on a colorful rug surrounded by wooden blocks..."
  */
-export function buildIllustrationPrompt(scenePrompt, childName, visualProfile, styleId) {
+export function buildIllustrationPrompt(scenePrompt, childName, visualProfile, styleId, familyDescription) {
     const characterLine = `Protagonist: ${visualProfile.raw_description}, named ${childName}.`;
+    const familyLine = familyDescription ? `Family members (when present in the scene): ${familyDescription}` : undefined;
     const sceneLine = `Scene: ${scenePrompt}`;
-    return [stylePrefix(styleId) + '.', characterLine, sceneLine].join('\n');
+    return [stylePrefix(styleId) + '.', characterLine, familyLine, sceneLine].filter(Boolean).join('\n');
 }
 /**
  * Versão simplificada para quando não temos visual profile ainda
@@ -70,13 +71,14 @@ export function buildIllustrationPromptBasic(scenePrompt, childName, childAge, s
 /**
  * Prompt de capa — usa a primeira ilustração como referência
  */
-export function buildCoverPrompt(bookTitle, childName, visualProfile, styleId) {
+export function buildCoverPrompt(bookTitle, childName, visualProfile, styleId, familyDescription) {
     return [
         stylePrefix(styleId) + ', book cover composition.',
         `Protagonist: ${visualProfile.raw_description}, named ${childName}.`,
+        familyDescription ? `Family members (when present in the scene): ${familyDescription}` : undefined,
         `Scene: A warm, inviting children's book cover featuring ${childName} as the hero,`,
         `centered composition, title space at top, magical and adventurous atmosphere,`,
         `rich colors, the child looking happy and confident.`,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 }
 //# sourceMappingURL=prompt_builder.js.map

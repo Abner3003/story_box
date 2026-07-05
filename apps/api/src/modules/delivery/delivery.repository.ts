@@ -1,11 +1,12 @@
 import { getSupabaseClient } from '@storybox/db'
 
 const ASSETS_BUCKET = 'storybox-assets'
-const PDF_SIGNED_URL_TTL = 60 * 60 * 24 * 7 // 7 dias
+const SIGNED_URL_TTL = 60 * 60 * 24 * 7 // 7 dias
 
-export async function getSignedPdfUrl(path: string): Promise<string> {
+// Genérico — serve pra PDF, capa ou imagem de página, qualquer path do bucket privado.
+export async function getSignedAssetUrl(path: string): Promise<string> {
   const db = getSupabaseClient()
-  const { data, error } = await db.storage.from(ASSETS_BUCKET).createSignedUrl(path, PDF_SIGNED_URL_TTL)
+  const { data, error } = await db.storage.from(ASSETS_BUCKET).createSignedUrl(path, SIGNED_URL_TTL)
   if (error || !data) throw error ?? new Error(`Falha ao gerar signed URL pra ${path}`)
   return data.signedUrl
 }

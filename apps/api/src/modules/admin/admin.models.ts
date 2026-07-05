@@ -13,6 +13,7 @@ export interface AdminBookSummary {
   childName?: string
   referenceMonth?: string
   pdfUrl?: string | null
+  coverImageUrl?: string | null
   reviewedBy?: string
   reviewedAt?: string
   reviewNotes?: string
@@ -31,6 +32,7 @@ export interface AdminBookDetail extends AdminBookSummary {
       text: string
       illustration_prompt: string
       image_storage_path?: string
+      imageUrl?: string | null
     }>
   }
 }

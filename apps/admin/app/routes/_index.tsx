@@ -10,7 +10,7 @@ import type { AdminBookSummary } from '../lib/admin-types.js'
 const PAGE_SIZE = 10
 
 function statusClass(status: string) {
-  return status
+  return status || 'pending'
 }
 
 export default function IndexRoute() {
@@ -37,7 +37,7 @@ export default function IndexRoute() {
 
     try {
       const data = await listBooks({ page, limit: PAGE_SIZE })
-      setBooks(data)
+      setBooks(Array.isArray(data) ? data : [])
     } catch (cause) {
       const status = (cause as { response?: { status?: number } }).response?.status
 

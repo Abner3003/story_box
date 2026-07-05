@@ -6,6 +6,7 @@ export function formatDate(value?: string | null) {
   }).format(new Date(value))
 }
 
-export function formatStatus(value: string) {
+export function formatStatus(value?: string | null) {
+  if (!value) return '—'
   return value.replaceAll('_', ' ')
 }

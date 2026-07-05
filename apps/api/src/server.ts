@@ -37,6 +37,16 @@ await app.register(swagger, {
       { name: 'Consent' },
       { name: 'Simulate' },
     ],
+    components: {
+      securitySchemes: {
+        adminApiKey: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-admin-key',
+          description: 'Chave definida em ADMIN_API_KEY — necessária pra todas as rotas /admin.',
+        },
+      },
+    },
   },
 })
 

@@ -31,6 +31,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: ListBooksQuery }>('/books', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'Lista livros para curadoria',
       querystring: paginationQuerystring,
       response: {
@@ -44,6 +45,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { id: string } }>('/books/:id', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'Detalhe de um livro para revisão',
       params: {
         type: 'object',
@@ -61,6 +63,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.patch<{ Params: { id: string }; Body: UpdateBookBody }>('/books/:id', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'Atualiza metadados editáveis de um livro',
       params: {
         type: 'object',
@@ -85,6 +88,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { id: string } }>('/books/:id/pdf-url', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'URL assinada para download do PDF',
       params: {
         type: 'object',
@@ -112,6 +116,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: ReviewBookBody }>('/books/:id/review', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'Aprova ou rejeita um livro',
       params: {
         type: 'object',
@@ -143,6 +148,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: RegenerateBookBody }>('/books/:id/regenerate', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'Reenfileira a regeração de páginas de um livro (ou do livro inteiro, se nenhuma página for informada)',
       params: {
         type: 'object',
@@ -175,6 +181,7 @@ export const adminRouter: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: ListCollectionsQuery }>('/collections', {
     schema: {
       tags: ['Admin'],
+      security: [{ adminApiKey: [] }],
       summary: 'Lista colecoes mensais',
       querystring: paginationQuerystring,
       response: {

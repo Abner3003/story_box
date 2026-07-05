@@ -65,6 +65,26 @@ services:
     networks:
       - internal
 
+  bull-board:
+    image: deadly0/bull-board:latest
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BULL_PREFIX: bull
+      BULL_VERSION: BULLMQ
+      USER_LOGIN: ${BULL_BOARD_USER}
+      USER_PASSWORD: ${BULL_BOARD_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_started
+    ports:
+      # só acessível localmente na VPS — via SSH tunnel (ssh -L 3002:localhost:3002 ...)
+      # ou reverse proxy próprio, nunca exposto direto na internet
+      - "127.0.0.1:3002:3000"
+    networks:
+      - internal
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped

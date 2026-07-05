@@ -104,6 +104,8 @@ jobs:
           STORYBOX_CONSENT_URL: ${{ secrets.STORYBOX_CONSENT_URL }}
           STORYBOX_INTRO_VIDEO_URL: ${{ secrets.STORYBOX_INTRO_VIDEO_URL }}
           WHATSAPP_WEEKLY_TEMPLATE_NAME: ${{ secrets.WHATSAPP_WEEKLY_TEMPLATE_NAME }}
+          BULL_BOARD_USER: ${{ secrets.BULL_BOARD_USER }}
+          BULL_BOARD_PASSWORD: ${{ secrets.BULL_BOARD_PASSWORD }}
           GHCR_USERNAME: ${{ env.GHCR_OWNER }}
           IMAGE_TAG: latest
           API_DOMAIN: ${{ vars.API_DOMAIN }}
@@ -165,6 +167,8 @@ jobs:
           write_env STORYBOX_CONSENT_URL "$STORYBOX_CONSENT_URL"
           write_env STORYBOX_INTRO_VIDEO_URL "$STORYBOX_INTRO_VIDEO_URL"
           write_env WHATSAPP_WEEKLY_TEMPLATE_NAME "$WHATSAPP_WEEKLY_TEMPLATE_NAME"
+          write_env BULL_BOARD_USER "$BULL_BOARD_USER"
+          write_env BULL_BOARD_PASSWORD "$BULL_BOARD_PASSWORD"
           write_env GHCR_USERNAME "$GHCR_USERNAME"
           write_env IMAGE_TAG "$IMAGE_TAG"
           write_env API_DOMAIN "$API_DOMAIN"

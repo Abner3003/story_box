@@ -111,10 +111,7 @@ export default function IndexRoute() {
       <section className="hero">
         <div className="eyebrow">StoryBox Admin</div>
         <h1 className="title">Livros gerados para revisão</h1>
-        <p className="subtitle">
-          Portal estático com consumo direto do backend em <code>storybox-api.mentebella.com.br</code>. A chave fica em
-          cookie e vai no header `x-admin-key`.
-        </p>
+        <p className="subtitle">Portal de revisão de livros gerados, com autenticação por API key.</p>
 
         <div className="toolbar">
           <span className="pill">

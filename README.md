@@ -111,7 +111,7 @@ Retorna `book_id` — acompanhe o status em:
 
 ```bash
 curl http://localhost:3001/admin/books \
-  -H "x-admin-token: SEU_ADMIN_SECRET"
+  -H "x-admin-key: SEU_ADMIN_SECRET"
 ```
 
 ## Estrutura do projeto

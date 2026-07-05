@@ -19,9 +19,7 @@ export function LoginCard({ error, loading, onSubmit }: LoginCardProps) {
       <section className="hero auth-hero">
         <div className="eyebrow">StoryBox Admin</div>
         <h1 className="title">Acesso administrativo</h1>
-        <p className="subtitle">
-          Entre com a API key do backend. A chave fica salva em cookie e é enviada no header `x-admin-key`.
-        </p>
+        <p className="subtitle">Entre com a API key para acessar o portal administrativo.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="stack">

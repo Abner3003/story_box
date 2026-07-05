@@ -19,6 +19,15 @@ function getBookId(book: AdminBookSummary & Record<string, unknown>) {
   return typeof id === 'string' && id.trim() ? id : null
 }
 
+function getCoverLabel(book: AdminBookSummary) {
+  const seed = book.childName?.trim() || book.title?.trim() || 'SB'
+  return seed
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join('')
+}
+
 export default function IndexRoute() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
@@ -152,6 +161,14 @@ export default function IndexRoute() {
 
       <section className="card table-wrap">
         <table>
+          <colgroup>
+            <col style={{ width: '84px' }} />
+            <col style={{ width: '220px' }} />
+            <col style={{ width: '34%' }} />
+            <col style={{ width: '160px' }} />
+            <col style={{ width: '170px' }} />
+            <col style={{ width: '280px' }} />
+          </colgroup>
           <thead>
             <tr>
               <th>Capa</th>
@@ -174,25 +191,27 @@ export default function IndexRoute() {
                 <tr key={bookId}>
                   <td>
                     {book.coverImageUrl ? (
-                      <img className="cover-thumb" src={book.coverImageUrl} alt="" />
+                      <img className="cover-thumb" src={book.coverImageUrl} alt={`Capa de ${book.title ?? book.childName ?? 'livro'}`} />
                     ) : (
-                      <div className="cover-thumb-placeholder" />
+                      <div className="cover-thumb-placeholder">
+                        <span>{getCoverLabel(book)}</span>
+                      </div>
                     )}
                   </td>
                   <td>
                     <div className="stack">
-                      <strong>{book.childName ?? '—'}</strong>
-                      <span className="muted">Livro #{bookId}</span>
+                      <strong className="cell-title">{book.childName ?? '—'}</strong>
+                      <span className="muted cell-subtitle">{bookId}</span>
                     </div>
                   </td>
                   <td>
                     <div className="stack">
-                      <strong>{book.title ?? 'Sem título'}</strong>
-                      <span className="muted">{book.referenceMonth ?? '—'}</span>
+                      <strong className="cell-title">{book.title ?? 'Sem título'}</strong>
+                      <span className="muted cell-subtitle">{book.referenceMonth ?? '—'}</span>
                     </div>
                   </td>
                   <td>
-                    <span className={`status ${statusClass(book.status)}`}>{formatStatus(book.status)}</span>
+                    <span className={`status status-inline ${statusClass(book.status)}`}>{formatStatus(book.status)}</span>
                   </td>
                   <td>
                     <div className="stack">
@@ -201,7 +220,7 @@ export default function IndexRoute() {
                     </div>
                   </td>
                   <td>
-                    <div className="actions">
+                    <div className="actions table-actions">
                       <button
                         className="button"
                         type="button"
@@ -230,7 +249,7 @@ export default function IndexRoute() {
 
             {!books.length ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={6}>
                   <p className="muted">{emptyMessage}</p>
                 </td>
               </tr>

@@ -3,6 +3,7 @@ import { findSubscriberByPhone, claimMessage } from './webhook.repository.js'
 import { startOnboarding, resumeOnboarding, isOnboarding } from '../onboarding/onboarding.service.js'
 import { resumeWeeklyCollection, isInWeeklyCollection } from '../onboarding/weekly-collection.service.js'
 import { startAccountMenu, resumeAccountMenu, isInAccountMenu } from '../onboarding/account.service.js'
+import { resumeUpsell, isInUpsell } from '../onboarding/upsell.service.js'
 import { findPendingPrintApproval, handlePrintApprovalReply } from '../delivery/print-approval.service.js'
 import { showTypingIndicator } from '../../lib/whatsapp.js'
 import { runExclusive } from '../../lib/phone-lock.js'
@@ -69,9 +70,17 @@ export async function handleWhatsAppWebhook(
             return
           }
 
+          // Checa antes do upsell: enquanto o livro estiver esperando
+          // aprovação pra impressão, a próxima mensagem é resposta disso, não
+          // uma escolha de plano do CTA que pode ser disparado a seguir.
           const pendingApproval = await findPendingPrintApproval(subscriber.id)
           if (pendingApproval) {
-            await handlePrintApprovalReply(pendingApproval.id, subscriber.phone, content)
+            await handlePrintApprovalReply(pendingApproval.id, subscriber, content)
+            return
+          }
+
+          if (await isInUpsell(phone)) {
+            await resumeUpsell(phone, content)
             return
           }
 

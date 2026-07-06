@@ -30,11 +30,30 @@ function sanitizeForPdf(text: string): string {
     .trim()
 }
 
+// Vinheta nas bordas da ILUSTRAÇÃO (não neblina em cima dela): as pontas da
+// imagem esmaecem suavemente pro branco da página, igual livro infantil
+// impresso de verdade — o centro da arte fica intacto, só as bordas (onde o
+// texto entra) ficam naturalmente mais claras.
+function drawImageWithVignette(doc: PDFKit.PDFDocument, imageBuffer: Buffer) {
+  doc.image(imageBuffer, 0, 0, { width: PAGE_SIZE, height: PAGE_SIZE })
+
+  const centerX = PAGE_SIZE / 2
+  const centerY = PAGE_SIZE / 2
+  const innerRadius = PAGE_SIZE * 0.34
+  const outerRadius = PAGE_SIZE * 0.74
+
+  const vignette = doc.radialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius)
+  vignette.stop(0, GLOW_COLOR, 0).stop(1, GLOW_COLOR, 0.92)
+
+  doc.save()
+  doc.rect(0, 0, PAGE_SIZE, PAGE_SIZE).fill(vignette)
+  doc.restore()
+}
+
 // Fonte serifada em caixa alta, tipo letreiro de livro infantil de verdade
-// (ex: "Um Amigo para George"). Nada de caixa/faixa sólida atrás — um halo
-// claro e esfumaçado que abraça só o bloco de texto (não a página inteira),
-// esmaecendo pras bordas, pra ficar legível em cima de qualquer trecho da
-// ilustração sem parecer uma placa colada em cima da arte.
+// (ex: "Um Amigo para George"). O texto fica direto sobre a vinheta clara
+// da borda (sem caixa/placa), com um reforço pequeno e discreto só atrás do
+// bloco de texto pra garantir legibilidade mesmo se a vinheta não bastar.
 function drawTextOverImage(doc: PDFKit.PDFDocument, rawText: string, fontSize: number) {
   const text = sanitizeForPdf(rawText).toUpperCase()
   const maxTextWidth = PAGE_SIZE - PANEL_MARGIN * 2 - PANEL_PADDING * 2
@@ -49,14 +68,14 @@ function drawTextOverImage(doc: PDFKit.PDFDocument, rawText: string, fontSize: n
 
   const centerX = blockX + blockWidth / 2
   const centerY = blockY + blockHeight / 2
-  const innerRadius = Math.min(blockWidth, blockHeight) * 0.3
-  const outerRadius = Math.max(blockWidth, blockHeight) * 0.68
+  const innerRadius = Math.min(blockWidth, blockHeight) * 0.2
+  const outerRadius = Math.max(blockWidth, blockHeight) * 0.55
 
-  const glow = doc.radialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius)
-  glow.stop(0, GLOW_COLOR, 0.95).stop(0.6, GLOW_COLOR, 0.7).stop(1, GLOW_COLOR, 0)
+  const boost = doc.radialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius)
+  boost.stop(0, GLOW_COLOR, 0.5).stop(1, GLOW_COLOR, 0)
 
   doc.save()
-  doc.rect(0, 0, PAGE_SIZE, PAGE_SIZE).fill(glow)
+  doc.rect(blockX, blockY, blockWidth, blockHeight).fill(boost)
   doc.restore()
 
   doc
@@ -124,12 +143,12 @@ export async function assembleBookPdf(input: BookPdfInput): Promise<Buffer> {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    doc.image(input.coverImageBuffer, 0, 0, { width: PAGE_SIZE, height: PAGE_SIZE })
+    drawImageWithVignette(doc, input.coverImageBuffer)
     drawTextOverImage(doc, input.title, 24)
 
     for (const { page, imageBuffer } of input.pages) {
       doc.addPage({ size: [PAGE_SIZE, PAGE_SIZE], margin: 0 })
-      doc.image(imageBuffer, 0, 0, { width: PAGE_SIZE, height: PAGE_SIZE })
+      drawImageWithVignette(doc, imageBuffer)
       drawTextOverImage(doc, page.text, 15)
     }
 

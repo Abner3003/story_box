@@ -12,30 +12,33 @@ const DEFAULT_STYLE = 'watercolor';
 // geração de cena via texto (images.generate), não edição de foto (images.edit).
 const STYLE_PREFIXES = {
     watercolor: [
-        'Children\'s picture book illustration in a semi-realistic painterly style',
-        'rich watercolor and gouache textures with visible brushwork',
-        'warm natural lighting and soft shadows giving real depth and volume',
+        'Children\'s picture book illustration in a modern, vibrant painterly watercolor style, like a contemporary award-winning picture book published today',
+        'rich, saturated, joyful color palette — bright and cheerful, never dull',
+        'visible brushwork and gouache texture, warm lighting and soft shadows giving real depth and volume',
         'detailed, believable background environment (not a blank/minimal backdrop)',
-        'characters with naturalistic proportions and expressive but grounded faces',
+        'characters with naturalistic proportions and expressive, warm, contemporary faces',
         'award-winning professional children\'s book illustration quality',
         'NOT flat, NOT vector, NOT sticker-style, NOT plastic-looking',
+        'NOT vintage, NOT sepia-toned, NOT muted or washed-out or faded colors, NOT old-fashioned religious-pamphlet look',
     ].join(', '),
     cartoon3d: [
-        'Children\'s picture book illustration, painterly 3D-rendered look',
+        'Children\'s picture book illustration, painterly 3D-rendered look, modern and vibrant like a contemporary animated feature',
+        'rich, saturated, joyful color palette — bright and cheerful, never dull or faded',
         'soft cinematic lighting with real depth of field and gentle shadows',
         'richly detailed, textured background environment',
         'big expressive eyes but otherwise naturalistic proportions and skin/hair texture',
         'award-winning professional children\'s book illustration quality',
-        'NOT flat, NOT vector, NOT sticker-style',
+        'NOT flat, NOT vector, NOT sticker-style, NOT vintage, NOT sepia-toned, NOT muted colors',
     ].join(', '),
     flat: [
         'Children\'s book illustration',
         'modern flat vector style',
         'clean shapes',
-        'bold flat colors',
+        'bold, vibrant, saturated flat colors — bright and cheerful, never muted or dull',
         'minimal shading',
         'detailed background environment matching the scene',
         'professional children\'s book quality',
+        'NOT vintage, NOT sepia-toned, NOT washed-out colors',
     ].join(', '),
 };
 function stylePrefix(styleId) {

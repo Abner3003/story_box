@@ -68,16 +68,21 @@ Cada illustration_prompt deve:
 - Descrever a cena com detalhes visuais ricos
 - Incluir a emoção do personagem na cena
 - Mencionar elementos do ambiente que reforçam o clima
-- Se a cena tiver família (mãe, pai, irmãos), inclua a presença deles na composição normalmente
 - NÃO incluir descrição física de nenhum personagem (protagonista ou família) — isso é injetado automaticamente
 - Ser escrito em inglês fluente e cinematográfico
 - Ter entre 30–50 palavras
 
+**Regra inegociável — texto e illustration_prompt descrevem a MESMA cena, sempre:**
+- Se o TEXTO da página menciona um familiar presente (ex: "com sua mamãe", "o irmão apareceu"), o illustration_prompt DESSA MESMA PÁGINA precisa incluir esse familiar fisicamente na composição — nunca deixe o texto falar de alguém que não aparece na imagem.
+- Se o illustration_prompt não inclui ninguém além do protagonista, o texto NÃO pode mencionar outra pessoa presente na cena (pode citar alguém em falado/lembrança, mas não como se estivesse ali).
+- NÃO invente objetos, roupas ou acessórios incidentais (chapéu, brinquedo específico, bola etc.) só pra enriquecer a frase — só mencione no texto (e replique no illustration_prompt) o que for essencial pra história. Se não é essencial, não inclua em nenhum dos dois.
+- Releia mentalmente cada par texto/illustration_prompt antes de finalizar: tudo que o texto afirma que está na cena precisa estar descrito no illustration_prompt, e vice-versa.
+
 Exemplo de illustration_prompt ruim:
 "A boy playing with toys in a room"
 
-Exemplo de illustration_prompt bom:
-"A toddler sitting cross-legged on a colorful rug surrounded by wooden blocks and toy cars, looking up with wide curious eyes at the doorway, warm afternoon light streaming through curtains, cozy and safe atmosphere, soft shadows"`
+Exemplo de illustration_prompt bom (texto da página: "Noah estava sentado no tapete, brincando sozinho com os blocos"):
+"A toddler sitting cross-legged on a colorful rug surrounded by wooden blocks and toy cars, alone in the room, looking up with wide curious eyes at the doorway, warm afternoon light streaming through curtains, cozy and safe atmosphere, soft shadows"`
 
 export const STORY_USER_TEMPLATE = `Crie uma história personalizada com as seguintes informações reais desta criança:
 

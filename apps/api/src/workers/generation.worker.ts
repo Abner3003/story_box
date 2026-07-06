@@ -11,9 +11,10 @@ import {
   StoragePaths,
 } from '../modules/generation/generation.repository.js'
 import { generateStory, calculateAge } from '../lib/story.js'
-import { generateImage } from '../lib/illustration.js'
+import { generateImage, type ReferenceImage } from '../lib/illustration.js'
 import { assembleBookPdf } from '../lib/pdf.js'
 import { getSubscriberById } from '../modules/payment/payment.repository.js'
+import { downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
 
 interface GenerateBookJobData {
   subscriberId: string
@@ -53,6 +54,24 @@ const worker = new Worker<GenerateBookJobData>(
     const subscriber = await getSubscriberById(job.data.subscriberId)
     const familyDescription = subscriber.family_description || undefined
 
+    // Descrição em texto (visual_profile/family_description) sozinha nunca
+    // produz semelhança real com a foto — o gpt-image-1 só "vê" a pessoa de
+    // verdade se a foto entrar como referência (images.edit em vez de
+    // images.generate). Baixa a foto da criança e da família uma vez só e
+    // reusa em todas as páginas + capa.
+    const references: ReferenceImage[] = []
+    if (child.photo_storage_path) {
+      const childPhoto = await downloadChildPhoto(child.photo_storage_path)
+      references.push(childPhoto)
+    }
+    if (subscriber.family_photo_path) {
+      const familyPhoto = await downloadChildPhoto(subscriber.family_photo_path)
+      references.push(familyPhoto)
+    }
+    const referenceNote = references.length
+      ? `\n\nReference photos attached — the first shows the real protagonist (${child.name}); it is essential (non-negotiable) that their skin tone, facial features and overall identity stay consistent with this reference, rendered in the ${styleId} style described above.${subscriber.family_photo_path ? ' The next one shows real family members present in the scene — their skin tone and features must also be visibly consistent with this family (same likeness, adapted to the same illustration style), not generic or unrelated-looking people.' : ''}`
+      : ''
+
     const story = await generateStory({
       childName: child.name,
       childAge,
@@ -75,14 +94,14 @@ const worker = new Worker<GenerateBookJobData>(
     // uma vez estoura o limite e derruba o job com 429 no meio do livro.
     const pagesWithImages: Array<{ page: typeof story.pages[number] & { image_storage_path: string }; imageBuffer: Buffer }> = []
     for (const page of story.pages) {
-      const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId, familyDescription)
-      const base64 = await generateImage(prompt)
+      const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId, familyDescription) + referenceNote
+      const base64 = await generateImage(prompt, references)
       const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
       pagesWithImages.push({ page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') })
     }
 
-    const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId, familyDescription)
-    const coverBase64 = await generateImage(coverPrompt)
+    const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId, familyDescription) + referenceNote
+    const coverBase64 = await generateImage(coverPrompt, references)
     const coverPath = await uploadBookAsset(StoragePaths.bookCover(book.id), coverBase64, 'image/png')
     const coverImageBuffer = Buffer.from(coverBase64, 'base64')
 

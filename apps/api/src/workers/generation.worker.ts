@@ -10,10 +10,11 @@ import {
   uploadBookAsset,
   StoragePaths,
 } from '../modules/generation/generation.repository.js'
+import type { StoryJSON } from '@storybox/db'
 import { generateStory, calculateAge } from '../lib/story.js'
 import { generateImage, type ReferenceImage } from '../lib/illustration.js'
 import { assembleBookPdf } from '../lib/pdf.js'
-import { getFamilyMembersForSubscriber } from '../modules/onboarding/onboarding.repository.js'
+import { getFamilyMembersForSubscriber, downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
 import { resolveChildReference, resolveFamilyMemberReference } from '../lib/character-reference.js'
 
 interface GenerateBookJobData {
@@ -83,38 +84,69 @@ const worker = new Worker<GenerateBookJobData>(
       ? `\n\nReference photos attached — the first shows the real protagonist (${child.name}); it is essential (non-negotiable) that their skin tone, facial features and overall identity stay consistent with this reference, rendered in the ${styleId} style described above.${familyMembersWithPhoto.length ? ` The following photo(s) show real family members present in the scene (${familyMembersWithPhoto.map((m) => m.role ? `${m.name} — ${m.role}` : m.name).join(', ')}) — their skin tone and features must also be visibly consistent with these references (same likeness, adapted to the same illustration style), not generic or unrelated-looking people.` : ''}`
       : ''
 
-    const story = await generateStory({
-      childName: child.name,
-      childAge,
-      visualProfileRaw: visualProfile.raw_description,
-      momentText,
-      challengeText: collection.challenge_text ?? '',
-      themePref: collection.theme_pref,
-    })
+    // Idempotência de retry: se essa é uma nova tentativa do BullMQ depois de
+    // uma falha no meio do livro (rate limit, timeout), reusa o que a
+    // tentativa anterior já gerou e pagou em vez de gerar tudo de novo do
+    // zero — texto e imagem custam dinheiro, e regenerar página já pronta
+    // não muda a qualidade em nada, só dobra/triplica o gasto por retry.
+    const existingStory = existingBook?.story_json as StoryJSON | undefined
 
-    await updateBook(book.id, {
-      title: story.title,
-      moral: story.moral,
-      story_json: story,
-      status: 'generating_images',
-      llm_model: 'gpt-4o',
-    })
+    const story = existingStory?.pages?.length
+      ? existingStory
+      : await generateStory({
+          childName: child.name,
+          childAge,
+          visualProfileRaw: visualProfile.raw_description,
+          momentText,
+          challengeText: collection.challenge_text ?? '',
+          themePref: collection.theme_pref,
+        })
+
+    if (!existingStory?.pages?.length) {
+      await updateBook(book.id, {
+        title: story.title,
+        moral: story.moral,
+        story_json: story,
+        status: 'generating_images',
+        llm_model: 'gpt-4o',
+      })
+    }
 
     // Sequencial, não Promise.all: a conta da OpenAI tem um limite baixo de
     // gerações de imagem por minuto (ex: 5/min) — disparar as 8 páginas de
     // uma vez estoura o limite e derruba o job com 429 no meio do livro.
     const pagesWithImages: Array<{ page: typeof story.pages[number] & { image_storage_path: string }; imageBuffer: Buffer }> = []
     for (const page of story.pages) {
+      if (page.image_storage_path) {
+        const { base64: existingBase64 } = await downloadChildPhoto(page.image_storage_path)
+        pagesWithImages.push({
+          page: page as typeof story.pages[number] & { image_storage_path: string },
+          imageBuffer: Buffer.from(existingBase64, 'base64'),
+        })
+        continue
+      }
+
       const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId, familyDescription) + referenceNote
       const base64 = await generateImage(prompt, references)
       const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
       pagesWithImages.push({ page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') })
+
+      // Salva o progresso página por página — se a próxima página falhar, um
+      // retry futuro já sabe que essa aqui está pronta e não paga de novo.
+      await updateBook(book.id, { story_json: { ...story, pages: pagesWithImages.map((p) => p.page) } })
     }
 
-    const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId, familyDescription) + referenceNote
-    const coverBase64 = await generateImage(coverPrompt, references)
-    const coverPath = await uploadBookAsset(StoragePaths.bookCover(book.id), coverBase64, 'image/png')
-    const coverImageBuffer = Buffer.from(coverBase64, 'base64')
+    let coverPath: string
+    let coverImageBuffer: Buffer
+    if (existingBook?.cover_image_storage_path) {
+      coverPath = existingBook.cover_image_storage_path
+      coverImageBuffer = Buffer.from((await downloadChildPhoto(coverPath)).base64, 'base64')
+    } else {
+      const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId, familyDescription) + referenceNote
+      const coverBase64 = await generateImage(coverPrompt, references)
+      coverPath = await uploadBookAsset(StoragePaths.bookCover(book.id), coverBase64, 'image/png')
+      coverImageBuffer = Buffer.from(coverBase64, 'base64')
+    }
 
     await updateBook(book.id, {
       story_json: { ...story, pages: pagesWithImages.map((p) => p.page) },

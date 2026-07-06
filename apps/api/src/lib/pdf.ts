@@ -3,11 +3,11 @@ import type { StoryPage } from '@storybox/db'
 
 const PAGE_SIZE = 612 // livro quadrado, 8.5" a 72dpi
 const PANEL_MARGIN = 28
-const PANEL_PADDING = 20
+const PANEL_PADDING = 24
 const PANEL_COLOR = '#fbf3e2'
-const TEXT_COLOR = '#3a2c1a'
-const SMOKE_COLOR = '#0e0a06'
-const FADE_HEIGHT = 90
+const TEXT_COLOR = '#2a1d10'
+const GLOW_COLOR = '#fffdf7'
+const TEXT_FONT = 'Times-Bold'
 
 export interface BookPdfInput {
   title: string
@@ -30,48 +30,55 @@ function sanitizeForPdf(text: string): string {
     .trim()
 }
 
-// Sem caixa/retângulo com borda visível — o texto "emerge" de uma neblina
-// suave sobre a própria ilustração, esfumaçada de baixo pra cima (transparente
-// no topo, mais densa perto da borda inferior), igual livro infantil de
-// verdade em vez de uma placa colada em cima da arte.
+// Fonte serifada em caixa alta, tipo letreiro de livro infantil de verdade
+// (ex: "Um Amigo para George"). Nada de caixa/faixa sólida atrás — um halo
+// claro e esfumaçado que abraça só o bloco de texto (não a página inteira),
+// esmaecendo pras bordas, pra ficar legível em cima de qualquer trecho da
+// ilustração sem parecer uma placa colada em cima da arte.
 function drawTextOverImage(doc: PDFKit.PDFDocument, rawText: string, fontSize: number) {
-  const text = sanitizeForPdf(rawText)
-  const font = 'Times-Roman'
-  const textWidth = PAGE_SIZE - PANEL_MARGIN * 2 - PANEL_PADDING * 2
+  const text = sanitizeForPdf(rawText).toUpperCase()
+  const maxTextWidth = PAGE_SIZE - PANEL_MARGIN * 2 - PANEL_PADDING * 2
 
-  doc.font(font).fontSize(fontSize)
-  const textHeight = doc.heightOfString(text, { width: textWidth, align: 'center' })
-  const bandHeight = Math.min(PAGE_SIZE * 0.6, textHeight + PANEL_PADDING * 2 + FADE_HEIGHT)
-  const bandY = PAGE_SIZE - bandHeight
+  doc.font(TEXT_FONT).fontSize(fontSize)
+  const textHeight = doc.heightOfString(text, { width: maxTextWidth, align: 'center' })
 
-  const smoke = doc.linearGradient(0, bandY, 0, PAGE_SIZE)
-  smoke.stop(0, SMOKE_COLOR, 0).stop(0.5, SMOKE_COLOR, 0.55).stop(1, SMOKE_COLOR, 0.86)
+  const blockWidth = maxTextWidth + PANEL_PADDING * 2
+  const blockHeight = textHeight + PANEL_PADDING * 2
+  const blockX = PANEL_MARGIN
+  const blockY = PAGE_SIZE - PANEL_MARGIN - blockHeight
+
+  const centerX = blockX + blockWidth / 2
+  const centerY = blockY + blockHeight / 2
+  const innerRadius = Math.min(blockWidth, blockHeight) * 0.3
+  const outerRadius = Math.max(blockWidth, blockHeight) * 0.68
+
+  const glow = doc.radialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius)
+  glow.stop(0, GLOW_COLOR, 0.95).stop(0.6, GLOW_COLOR, 0.7).stop(1, GLOW_COLOR, 0)
 
   doc.save()
-  doc.rect(0, bandY, PAGE_SIZE, bandHeight).fill(smoke)
+  doc.rect(0, 0, PAGE_SIZE, PAGE_SIZE).fill(glow)
   doc.restore()
 
-  const textY = PAGE_SIZE - PANEL_MARGIN - PANEL_PADDING - textHeight
   doc
     .fillOpacity(1)
-    .fillColor('white')
-    .font(font)
+    .fillColor(TEXT_COLOR)
+    .font(TEXT_FONT)
     .fontSize(fontSize)
-    .text(text, PANEL_MARGIN + PANEL_PADDING, textY, { width: textWidth, align: 'center' })
+    .text(text, blockX + PANEL_PADDING, blockY + PANEL_PADDING, { width: maxTextWidth, align: 'center' })
 }
 
 // Última página do livro: espaço reservado pra família colar/imprimir aquela
-// foto especial de verdade — moldura pontilhada num fundo claro, sem imagem
-// gerada por IA aqui.
+// foto especial de verdade (moldura pontilhada, sem imagem gerada por IA) e,
+// abaixo, linhas em branco pra escrever à mão uma lembrança desse momento.
 function drawPhotoFramePage(doc: PDFKit.PDFDocument, title: string) {
   doc.addPage({ size: [PAGE_SIZE, PAGE_SIZE], margin: 0 })
   doc.rect(0, 0, PAGE_SIZE, PAGE_SIZE).fill(PANEL_COLOR)
 
-  const frameMargin = 70
+  const frameMargin = 60
   const frameWidth = PAGE_SIZE - frameMargin * 2
-  const frameHeight = frameWidth * 0.8
+  const frameHeight = frameWidth * 0.56
   const frameX = frameMargin
-  const frameY = (PAGE_SIZE - frameHeight) / 2 - 30
+  const frameY = 48
 
   doc.save()
   doc.lineWidth(3).dash(8, { space: 6 }).strokeColor(TEXT_COLOR)
@@ -81,15 +88,31 @@ function drawPhotoFramePage(doc: PDFKit.PDFDocument, title: string) {
 
   doc
     .fillColor(TEXT_COLOR)
-    .font('Times-Bold')
-    .fontSize(20)
-    .text('Cole aqui aquela foto especial', frameMargin, frameY + frameHeight + 30, { width: frameWidth, align: 'center' })
+    .font(TEXT_FONT)
+    .fontSize(18)
+    .text('COLE AQUI AQUELA FOTO ESPECIAL', frameMargin, frameY + frameHeight + 24, { width: frameWidth, align: 'center' })
 
   doc
     .fillColor(TEXT_COLOR)
-    .font('Times-Roman')
+    .font('Times-Italic')
     .fontSize(13)
-    .text(`Uma lembrança de ${sanitizeForPdf(title)}`, frameMargin, frameY + frameHeight + 62, { width: frameWidth, align: 'center' })
+    .text('Escreva aqui esse momento:', frameMargin, frameY + frameHeight + 62, { width: frameWidth, align: 'center' })
+
+  const linesTop = frameY + frameHeight + 92
+  const lineSpacing = 32
+  doc.save()
+  doc.lineWidth(1).strokeColor(TEXT_COLOR).strokeOpacity(0.35)
+  for (let i = 0; i < 4; i++) {
+    const y = linesTop + i * lineSpacing
+    doc.moveTo(frameMargin, y).lineTo(frameMargin + frameWidth, y).stroke()
+  }
+  doc.restore()
+
+  doc
+    .fillColor(TEXT_COLOR)
+    .font('Times-Italic')
+    .fontSize(11)
+    .text(`Uma lembrança de ${sanitizeForPdf(title)}`, frameMargin, linesTop + 4 * lineSpacing + 12, { width: frameWidth, align: 'center' })
 }
 
 export async function assembleBookPdf(input: BookPdfInput): Promise<Buffer> {

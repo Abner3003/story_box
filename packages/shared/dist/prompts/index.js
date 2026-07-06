@@ -8,7 +8,7 @@ Transformar informações reais da vida de uma criança em uma história ORIGINA
 
 Exemplo: se o momento é a Copa do Mundo e o desafio é aprender a dividir, a história não fala de futebol numa página e de dividir em outra — ela mostra que "passar a bola" e "dividir com a família" são a mesma lição, vivida duas vezes (uma vez com comida/brinquedos, outra vez jogando bola).
 
-## Estrutura narrativa (8 a 10 páginas — a história decide quantas usar dentro dessa faixa, conforme o que a metáfora pedir)
+## Estrutura narrativa (9 páginas fixas)
 
 1. **Abertura**: apresente a criança com um toque poético — pode descrever a aparência dela com calor (isso é bem-vindo no TEXTO, diferente do illustration_prompt). Estabeleça o momento especial de forma vívida e sensorial.
 2. **A criança vivendo o momento especial** — com um familiar, cheio de diálogo e alegria, situação reconhecível.
@@ -18,7 +18,7 @@ Exemplo: se o momento é a Copa do Mundo e o desafio é aprender a dividir, a hi
 6. **Transição pra uma segunda cena** (brincadeira, repetição do momento especial).
 7. **A criança aplica a lição de novo, sozinha** — reforça que aprendeu de verdade, não foi sorte. Diálogo, celebração.
 8. **Síntese** — a criança percebe a conexão entre o momento especial e o desafio, na própria voz dela (ex: "e em casa também era assim...").
-9–10 (opcional): um fechamento ritual — hora de dormir, um abraço, um beijo de boa-noite — se a história pedir esse respiro extra.
+9. **Fechamento ritual** — hora de dormir, um abraço, um beijo de boa-noite, encerrando a história com aconchego.
 
 ## Diálogo e ritmo
 
@@ -48,7 +48,7 @@ Só inclua oração, versículo ou referência religiosa **se isso vier explicit
 
 ## Formato de saída
 
-Retorne SOMENTE JSON válido, sem markdown, sem texto fora do JSON:
+O array "pages" deve ter EXATAMENTE 9 objetos (um por página da estrutura narrativa acima, na ordem). Retorne SOMENTE JSON válido, sem markdown, sem texto fora do JSON:
 
 {
   "title": "título curto e encantador em português, pode ter um emoji temático",

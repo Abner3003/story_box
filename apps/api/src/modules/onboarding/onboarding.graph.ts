@@ -24,6 +24,8 @@ import { askConsentNode } from './nodes/ask-consent.js'
 import { collectConsentNode } from './nodes/collect-consent.js'
 import { askFamilyPhotoNode } from './nodes/ask-family-photo.js'
 import { collectFamilyPhotoNode } from './nodes/collect-family-photo.js'
+import { collectFamilyClarificationNode } from './nodes/collect-family-clarification.js'
+import { collectFamilySiblingDetailsNode } from './nodes/collect-family-sibling-details.js'
 import { askPhotoNode } from './nodes/ask-photo.js'
 import { collectPhotoNode } from './nodes/collect-photo.js'
 import { askStyleChoiceNode } from './nodes/ask-style-choice.js'
@@ -73,6 +75,8 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('collect_consent',             collectConsentNode)
   .addNode('ask_family_photo',            askFamilyPhotoNode)
   .addNode('collect_family_photo',        collectFamilyPhotoNode)
+  .addNode('collect_family_clarification', collectFamilyClarificationNode)
+  .addNode('collect_family_sibling_details', collectFamilySiblingDetailsNode)
   .addNode('ask_photo',                   askPhotoNode)
   .addNode('collect_photo',               collectPhotoNode)
   .addNode('ask_style_choice',            askStyleChoiceNode)
@@ -139,7 +143,18 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addConditionalEdges('collect_family_photo', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
-    return state.familyPhotoInvalid ? 'collect_family_photo' : 'ask_photo'
+    if (state.familyPhotoInvalid) return 'collect_family_photo'
+    return state.familyUnclearNote ? 'collect_family_clarification' : 'ask_photo'
+  })
+  .addConditionalEdges('collect_family_clarification', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    return state.familySiblingPending ? 'collect_family_sibling_details' : 'ask_photo'
+  })
+  .addConditionalEdges('collect_family_sibling_details', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    return state.familySiblingDetailsInvalid ? 'collect_family_sibling_details' : 'ask_photo'
   })
 
   .addEdge('ask_photo',            'collect_photo')

@@ -177,6 +177,27 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => false,
   }),
+  // presença = tem alguém não identificado na foto, precisa perguntar quem é
+  familyUnclearNote: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  familyPhotoPathPending: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  familyDescriptionPending: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  familySiblingPending: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
+  familySiblingDetailsInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
 
   // ── Foto ───────────────────────────────────────────────────
   photoInvalid: Annotation<boolean>({

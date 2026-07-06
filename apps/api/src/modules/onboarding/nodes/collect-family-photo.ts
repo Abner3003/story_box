@@ -8,15 +8,6 @@ import type { OnboardingState } from '../onboarding.state.js'
 
 const IMAGE_ID_RE = /^\[image:(.+)\]$/
 
-const MALE_HINT_RE = /\b(irmão|filho|menino|neto|sobrinho|primo|garoto)\b/i
-const FEMALE_HINT_RE = /\b(irmã|filha|menina|neta|sobrinha|prima|garota)\b/i
-
-function inferGenderHint(text: string): string | null {
-  if (MALE_HINT_RE.test(text)) return 'male'
-  if (FEMALE_HINT_RE.test(text)) return 'female'
-  return null
-}
-
 export async function collectFamilyPhotoNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
   const raw = interrupt<string>('awaiting_family_photo')
 
@@ -36,10 +27,10 @@ export async function collectFamilyPhotoNode(state: OnboardingState): Promise<Pa
 
   const mediaId = match[1]
 
-  try {
-    let base64: string
-    let mimeType: string
+  let base64: string
+  let mimeType: string
 
+  try {
     if (mediaId.startsWith('sim:')) {
       const stored = getSimulatedMedia(mediaId)
       if (!stored) {
@@ -57,44 +48,47 @@ export async function collectFamilyPhotoNode(state: OnboardingState): Promise<Pa
       base64 = media.base64
       mimeType = media.mimeType
     }
-
-    if (base64 && state.subscriberId) {
-      const photoPath = await uploadFamilyPhoto(state.subscriberId, base64, mimeType)
-      const analysis = await analyzeFamilyPhoto(base64, mimeType)
-
-      const recognizedLine = analysis.recognized.length
-        ? `📸 Foto da família recebida! Pelo que eu vi: ${analysis.recognized.join(', ')}.`
-        : '📸 Foto da família recebida!'
-
-      let description = analysis.illustrationDescription
-
-      if (analysis.unclearNote) {
-        await sendText(
-          state.phone,
-          `${recognizedLine}\n\nVi também ${analysis.unclearNote} na foto — quem é essa pessoa? (ex: "é o irmão dele, o Lucas")`,
-        )
-
-        const clarification = interrupt<string>('awaiting_family_clarification')
-        const genderHint = inferGenderHint(clarification)
-        const genderLine = genderHint ? `a ${genderHint} child` : 'a child'
-        description = [
-          description,
-          `Additional family member — ${genderLine}, as described by the parent: "${clarification.trim()}".`,
-        ].filter(Boolean).join('\n')
-
-        await sendText(state.phone, 'Anotado! Vou usar pra deixar as ilustrações mais especiais.')
-      } else {
-        await sendText(state.phone, `${recognizedLine} Vou usar pra deixar as ilustrações mais especiais.`)
-      }
-
-      await saveFamilyAppearance(state.subscriberId, photoPath, description)
-    } else {
-      await sendText(state.phone, '📸 Foto da família recebida! Vou usar pra deixar as ilustrações mais especiais.')
-    }
-
-    return { familyPhotoInvalid: false }
   } catch {
     await sendText(state.phone, '❌ Não consegui processar a foto. Envie novamente ou digite *não*:')
     return { familyPhotoInvalid: true }
   }
+
+  if (!base64 || !state.subscriberId) {
+    await sendText(state.phone, '📸 Foto da família recebida! Vou usar pra deixar as ilustrações mais especiais.')
+    return { familyPhotoInvalid: false }
+  }
+
+  let photoPath: string
+  let analysis: Awaited<ReturnType<typeof analyzeFamilyPhoto>>
+
+  try {
+    photoPath = await uploadFamilyPhoto(state.subscriberId, base64, mimeType)
+    analysis = await analyzeFamilyPhoto(base64, mimeType)
+  } catch {
+    await sendText(state.phone, '❌ Não consegui processar a foto. Envie novamente ou digite *não*:')
+    return { familyPhotoInvalid: true }
+  }
+
+  const recognizedLine = analysis.recognized.length
+    ? `📸 Foto da família recebida! Pelo que eu vi: ${analysis.recognized.join(', ')}.`
+    : '📸 Foto da família recebida!'
+
+  if (analysis.unclearNote) {
+    await sendText(
+      state.phone,
+      `${recognizedLine}\n\nVi também ${analysis.unclearNote} na foto — quem é essa pessoa? (ex: "é o irmão dele, o Lucas")`,
+    )
+
+    return {
+      familyPhotoInvalid: false,
+      familyUnclearNote: analysis.unclearNote,
+      familyPhotoPathPending: photoPath,
+      familyDescriptionPending: analysis.illustrationDescription,
+    }
+  }
+
+  await sendText(state.phone, `${recognizedLine} Vou usar pra deixar as ilustrações mais especiais.`)
+  await saveFamilyAppearance(state.subscriberId, photoPath, analysis.illustrationDescription)
+
+  return { familyPhotoInvalid: false, familyUnclearNote: undefined }
 }

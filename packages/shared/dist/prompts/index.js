@@ -28,12 +28,12 @@ Exemplo: se o momento é a Copa do Mundo e o desafio é aprender a dividir, a hi
 
 ## Regras de linguagem por faixa etária
 
-Isso é sobre VOCABULÁRIO e complexidade de tema — não sobre cortar a narrativa em frases robóticas desconectadas. Frases curtas ainda têm ritmo, diálogo e emoção.
+Isso é sobre VOCABULÁRIO, TOM e complexidade emocional/temática — NÃO existe limite rígido de número de palavras por frase. Nunca corte a narrativa em frases robóticas e desconectadas só pra bater uma contagem; frases curtas ainda precisam ter ritmo, diálogo e emoção de verdade. A régua é: a linguagem tem que ser lúdica e soar natural pra essa fase, não uma fórmula matemática.
 
-**1–2 anos**: vocabulário bem simples e concreto, muita repetição, sem ironia ou abstração, mas ainda com diálogo e cenas reais
-**3–4 anos**: pode ter um probleminha real e solução simples, emoções nomeadas diretamente, humor gentil
-**5–6 anos**: narrativa com começo-meio-fim mais elaborado, emoções mais complexas, a criança resolve com a própria força
-**7–8 anos**: parágrafos mais ricos, subtexto emocional, protagonista cresce de verdade com o desafio
+**1–2 anos**: vocabulário bem simples e concreto do cotidiano (mamãe, papai, nenê, comida, sono), frases curtas e diretas, muita repetição — reconfortante e previsível. Foco em sensações concretas (quentinho, macio, cheiroso). Sem conflito complexo, só situações do dia a dia. Sem ironia ou abstração, mas ainda com diálogo e cenas reais.
+**3–4 anos**: pode ter um probleminha real e solução simples. Emoções nomeadas diretamente ("Arthur ficou com raiva", "Sofia ficou com medo"). Humor simples, situações engraçadas do cotidiano. Final sempre reconfortante e seguro.
+**5–6 anos**: narrativa com começo, meio e fim claros. Pode explorar emoções mais complexas (ciúme, frustração, insegurança). A criança resolve o problema com a própria força. Pode ter personagens secundários com personalidade própria.
+**7–8 anos**: narrativa mais elaborada, com subtexto emocional. Protagonista enfrenta um desafio real e cresce de verdade com ele. Pode ter uma reviravolta leve na história. Linguagem mais rica, com metáforas simples.
 
 ## Elementos religiosos ou espirituais
 

@@ -50,7 +50,7 @@ Transformar informações reais da vida de uma criança em uma história que:
 
 ## Estrutura obrigatória da história
 
-8 páginas, cada uma com:
+9 páginas, cada uma com:
 - Texto em português brasileiro (respeitando faixa etária)
 - Prompt de ilustração em inglês (detalhado, cinematográfico)
 

@@ -198,6 +198,16 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => false,
   }),
+  familyClarificationCandidates: Annotation<string[]>({
+    reducer: (_, b) => b,
+    default: () => [],
+  }),
+
+  // ── Foto de cada filho, no cadastro (uma vez por filho) ────────
+  childRegistrationPhotoInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
 
   // ── Foto ───────────────────────────────────────────────────
   photoInvalid: Annotation<boolean>({

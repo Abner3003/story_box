@@ -3,6 +3,7 @@ import { sendText } from '../../../lib/whatsapp.js'
 import type { ChildInput, OnboardingState } from '../onboarding.state.js'
 import { maxChildrenForPlan } from '../max-children.js'
 import { checkEditIntent } from '../edit-intent.js'
+import { createChild } from '../onboarding.repository.js'
 
 function parseBirthDate(input: string): string | null {
   // aceita DD/MM/YYYY ou YYYY-MM-DD
@@ -38,15 +39,23 @@ export async function collectChildBirthNode(state: OnboardingState): Promise<Par
   const child: ChildInput = { name: state.childDraftName ?? '', birthDate }
   const children = [...state.children, child]
   const max = maxChildrenForPlan(state.plan)
+  const childrenDone = children.length >= max
 
-  if (children.length < max) {
-    await sendText(
-      state.phone,
-      `${child.name} cadastrado! ✅\n\nQuer adicionar outro filho? (${children.length}/${max})\nMande o *nome* ou *não* para continuar:`,
-    )
-    return { children, childBirthInvalid: false, childrenDone: false, editIntent: undefined }
+  // O consentimento de imagem já foi dado antes de chegar aqui — cadastra o
+  // filho de verdade agora (em vez de só guardar em memória e criar tudo de
+  // uma vez depois), pra já poder pedir a foto dele na sequência.
+  let childId: string | undefined
+  if (state.subscriberId) {
+    childId = await createChild({
+      subscriber_id: state.subscriberId,
+      name: child.name,
+      birth_date: child.birthDate,
+      image_consent: state.imageConsentAccepted ?? false,
+    })
   }
+  const childIds = childId ? [...state.childIds, childId] : state.childIds
 
-  await sendText(state.phone, `✅ ${children.length} filho(s) cadastrado(s)!`)
-  return { children, childBirthInvalid: false, childrenDone: true, editIntent: undefined }
+  await sendText(state.phone, `${child.name} cadastrado! ✅`)
+
+  return { children, childIds, childBirthInvalid: false, childrenDone, editIntent: undefined }
 }

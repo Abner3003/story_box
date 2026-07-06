@@ -22,6 +22,32 @@ export async function collectFamilyClarificationNode(state: OnboardingState): Pr
   const clarification = interrupt<string>('awaiting_family_clarification')
   const trimmed = clarification.trim()
 
+  // Confirmou um dos irmãos já cadastrados sugeridos na pergunta — já temos
+  // nome e data de nascimento, não precisa perguntar de novo.
+  const candidates = state.familyClarificationCandidates ?? []
+  const matchedCandidate = candidates.find((name) => new RegExp(`\\b${name}\\b`, 'i').test(trimmed))
+    ?? (candidates.length === 1 && /^(sim|isso|é|claro|exato|correto)$/i.test(trimmed) ? candidates[0] : null)
+
+  if (matchedCandidate) {
+    const description = [
+      state.familyDescriptionPending,
+      `Additional family member — this is ${matchedCandidate}, a sibling already known to the family.`,
+    ].filter(Boolean).join('\n')
+
+    if (state.subscriberId && state.familyPhotoPathPending) {
+      await saveFamilyAppearance(state.subscriberId, state.familyPhotoPathPending, description)
+    }
+
+    await sendText(state.phone, `Anotado! *${matchedCandidate}* também vai aparecer nas ilustrações. 💛`)
+
+    return {
+      familyUnclearNote: undefined,
+      familyPhotoPathPending: undefined,
+      familyDescriptionPending: undefined,
+      familyClarificationCandidates: [],
+    }
+  }
+
   const genderHint = inferGenderHint(trimmed)
   const genderLine = genderHint ? `a ${genderHint} child` : 'a child'
   const description = [
@@ -36,7 +62,7 @@ export async function collectFamilyClarificationNode(state: OnboardingState): Pr
       state.phone,
       'Entendi, é irmão(ã)! Pra cadastrar, me manda o *nome* e a *data de nascimento* assim: Lucas, 15/03/2023',
     )
-    return { familyDescriptionPending: description, familySiblingPending: true }
+    return { familyDescriptionPending: description, familySiblingPending: true, familyClarificationCandidates: [] }
   }
 
   if (state.subscriberId && state.familyPhotoPathPending) {
@@ -45,5 +71,10 @@ export async function collectFamilyClarificationNode(state: OnboardingState): Pr
 
   await sendText(state.phone, 'Anotado! Vou usar pra deixar as ilustrações mais especiais.')
 
-  return { familyUnclearNote: undefined, familyPhotoPathPending: undefined, familyDescriptionPending: undefined }
+  return {
+    familyUnclearNote: undefined,
+    familyPhotoPathPending: undefined,
+    familyDescriptionPending: undefined,
+    familyClarificationCandidates: [],
+  }
 }

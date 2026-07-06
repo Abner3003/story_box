@@ -17,6 +17,8 @@ import { collectComplementNode } from './nodes/collect-complement.js'
 import { askChildrenNode } from './nodes/ask-children.js'
 import { collectChildNameNode } from './nodes/collect-child-name.js'
 import { collectChildBirthNode } from './nodes/collect-child-birth.js'
+import { askChildRegistrationPhotoNode } from './nodes/ask-child-registration-photo.js'
+import { collectChildRegistrationPhotoNode } from './nodes/collect-child-registration-photo.js'
 import { collectMoreChildrenNode } from './nodes/collect-more-children.js'
 import { askChildSelectionNode } from './nodes/ask-child-selection.js'
 import { collectChildSelectionNode } from './nodes/collect-child-selection.js'
@@ -40,7 +42,7 @@ import type { OnboardingState } from './onboarding.state.js'
 import { checkpointer } from './checkpointer.js'
 
 function routeAfterPayment(state: OnboardingState) {
-  return state.plan === 'digital' ? 'ask_children' : 'ask_address'
+  return state.plan === 'digital' ? 'ask_consent' : 'ask_address'
 }
 
 function editRoute(state: OnboardingState): string | null {
@@ -68,6 +70,8 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('ask_children',                askChildrenNode)
   .addNode('collect_child_name',          collectChildNameNode)
   .addNode('collect_child_birth',         collectChildBirthNode)
+  .addNode('ask_child_registration_photo', askChildRegistrationPhotoNode)
+  .addNode('collect_child_registration_photo', collectChildRegistrationPhotoNode)
   .addNode('collect_more_children',       collectMoreChildrenNode)
   .addNode('ask_child_selection',         askChildSelectionNode)
   .addNode('collect_child_selection',     collectChildSelectionNode)
@@ -114,30 +118,36 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addConditionalEdges('collect_zip', (state) =>
     editRoute(state) ?? (state.zipInvalid ? 'collect_zip' : 'collect_number'))
   .addConditionalEdges('collect_number', (state) => editRoute(state) ?? 'collect_complement')
-  .addConditionalEdges('collect_complement', (state) => editRoute(state) ?? state.returnTo ?? 'ask_children')
-
-  .addEdge('ask_children',         'collect_child_name')
-  .addConditionalEdges('collect_child_name', (state) => editRoute(state) ?? 'collect_child_birth')
-  .addConditionalEdges('collect_child_birth', (state) => {
-    const edit = editRoute(state)
-    if (edit) return edit
-    if (state.childBirthInvalid) return 'collect_child_birth'
-    return state.childrenDone ? 'ask_child_selection' : 'collect_more_children'
-  })
-  .addConditionalEdges('collect_more_children', (state) =>
-    editRoute(state) ?? (state.childrenDone ? 'ask_child_selection' : 'collect_child_birth'))
-
-  .addConditionalEdges('ask_child_selection', (state) => state.children.length > 1 ? 'collect_child_selection' : 'ask_consent')
-  .addConditionalEdges('collect_child_selection', (state) =>
-    editRoute(state) ?? (state.childSelectionInvalid ? 'collect_child_selection' : 'ask_consent'))
+  .addConditionalEdges('collect_complement', (state) => editRoute(state) ?? state.returnTo ?? 'ask_consent')
 
   .addEdge('ask_consent',          'collect_consent')
   .addConditionalEdges('collect_consent', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
     if (state.consentInvalid) return 'collect_consent'
-    return state.imageConsentAccepted ? 'ask_family_photo' : '__end__'
+    return state.imageConsentAccepted ? 'ask_children' : '__end__'
   })
+
+  .addEdge('ask_children',         'collect_child_name')
+  .addConditionalEdges('collect_child_name', (state) => editRoute(state) ?? 'collect_child_birth')
+  .addConditionalEdges('collect_child_birth', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    return state.childBirthInvalid ? 'collect_child_birth' : 'ask_child_registration_photo'
+  })
+  .addEdge('ask_child_registration_photo', 'collect_child_registration_photo')
+  .addConditionalEdges('collect_child_registration_photo', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    if (state.childRegistrationPhotoInvalid) return 'collect_child_registration_photo'
+    return state.childrenDone ? 'ask_child_selection' : 'collect_more_children'
+  })
+  .addConditionalEdges('collect_more_children', (state) =>
+    editRoute(state) ?? (state.childrenDone ? 'ask_child_selection' : 'collect_child_birth'))
+
+  .addConditionalEdges('ask_child_selection', (state) => state.children.length > 1 ? 'collect_child_selection' : 'ask_family_photo')
+  .addConditionalEdges('collect_child_selection', (state) =>
+    editRoute(state) ?? (state.childSelectionInvalid ? 'collect_child_selection' : 'ask_family_photo'))
 
   .addEdge('ask_family_photo',     'collect_family_photo')
   .addConditionalEdges('collect_family_photo', (state) => {

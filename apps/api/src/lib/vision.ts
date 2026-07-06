@@ -120,3 +120,46 @@ export async function analyzeFamilyPhoto(base64Image: string, mimeType: string):
     return { recognized: [], unclearNote: null, illustrationDescription: '' }
   }
 }
+
+// Compara a criança "não identificada" da foto de família com a foto de
+// referência de cada irmão já cadastrado (coletada no cadastro de filhos) —
+// se bater com um deles, não precisa perguntar pra família quem é.
+export async function identifyFamilyMember(
+  familyBase64: string,
+  familyMimeType: string,
+  unclearNote: string,
+  candidates: Array<{ name: string; base64: string; mimeType: string }>,
+): Promise<string | null> {
+  if (!candidates.length) return null
+
+  const openai = client()
+
+  const content: Array<
+    | { type: 'text'; text: string }
+    | { type: 'image_url'; image_url: { url: string; detail: 'low' | 'high' } }
+  > = [
+    {
+      type: 'text',
+      text: `Family photo. It contains a child described as: "${unclearNote}". Compare that child to the reference photos below (one per known child) and answer with ONLY the matching child's name exactly as given, or "none" if none of them look like a plausible match. Be conservative — only answer a name if reasonably confident.`,
+    },
+    { type: 'image_url', image_url: { url: `data:${familyMimeType};base64,${familyBase64}`, detail: 'high' } },
+  ]
+
+  for (const candidate of candidates) {
+    content.push({ type: 'text', text: `Reference photo of ${candidate.name}:` })
+    content.push({ type: 'image_url', image_url: { url: `data:${candidate.mimeType};base64,${candidate.base64}`, detail: 'low' } })
+  }
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 20,
+    messages: [
+      { role: 'system', content: 'You compare children\'s faces across photos. Answer with only a name (exactly as given) or the word "none" — nothing else.' },
+      { role: 'user', content },
+    ],
+  })
+
+  const answer = response.choices[0]?.message?.content?.trim().replace(/[."]/g, '') ?? ''
+  const match = candidates.find((c) => c.name.toLowerCase() === answer.toLowerCase())
+  return match?.name ?? null
+}

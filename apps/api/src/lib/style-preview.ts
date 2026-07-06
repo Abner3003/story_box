@@ -19,14 +19,22 @@ export interface StylePreset {
 const NO_TEXT_SUFFIX = ' Absolutely no text, no words, no letters rendered in the image.'
 
 // Identidade visual única do produto — não existe mais escolha de estilo.
+// Pintura digital cinematográfica de livro infantil premium — NÃO um render
+// 3D (nada de visual Pixar/CGI), mais perto de concept art pintada à mão.
 export const STYLE_PRESETS: StylePreset[] = [
   {
     id: 'disney',
-    label: 'Animação 3D',
+    label: 'Storybook pintado',
     prompt:
-      'Redraw this exact person in a modern 3D animated feature-film style, like a big-budget contemporary American ' +
-      'animation studio production. Big expressive eyes, warm and appealing character design, soft cel-shaded/painterly ' +
-      'rendering, cinematic lighting, rich saturated colors. Keep the same facial features, hair and identity as the reference photo.' + NO_TEXT_SUFFIX,
+      'Redraw this exact person as a premium, high-end children\'s storybook illustration — the gallery-quality fine ' +
+      'art direction of an award-winning hardcover picture book from a top publisher, NOT a generic or mass-market ' +
+      'look. Meticulous, polished, expensive-looking, museum-worthy book art. Cinematic hand-painted digital ' +
+      'painting style, soft visible brushstrokes, blended colors, slightly soft/diffused edges, organic gradients, ' +
+      'no excessive sharpness, like a digital oil painting. Warm and desaturated color harmony (muted greens, golden ' +
+      'yellows, cream, warm brown, soft orange), cinematic golden-hour lighting with gentle soft shadows. ' +
+      'Slightly oversized head, big but not oversized eyes, extremely innocent expression, rosy cheeks, simplified ' +
+      'features, very clean silhouette. This must look PAINTED, not rendered — NOT a 3D render, NOT CGI, NOT a clean ' +
+      '3D-animated-movie look. Keep the same facial features, hair and identity as the reference photo.' + NO_TEXT_SUFFIX,
   },
 ]
 

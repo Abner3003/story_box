@@ -7,20 +7,24 @@
  * 3. Descrição da cena (gerada pelo LLM por página)
  */
 // Identidade visual única do produto — não existe mais escolha de estilo
-// pela família. Estilo de animação 3D contemporâneo (tipo grandes estúdios
-// de animação americanos atuais), não aquarela/flat/vintage.
-const DISNEY_STYLE_PREFIX = [
-    'Children\'s picture book illustration in a modern 3D animated feature-film style, like a big-budget contemporary American animation studio production',
-    'big expressive eyes, warm and appealing character design, soft cel-shaded/painterly rendering with real depth and volume',
-    'rich, saturated, joyful color palette — bright, cheerful, cinematic',
-    'soft cinematic lighting with gentle shadows and a magical, heartwarming atmosphere',
-    'richly detailed, believable background environment (not a blank/minimal backdrop)',
-    'award-winning professional animated-feature illustration quality',
-    'NOT flat, NOT vector, NOT sticker-style, NOT plastic-looking',
-    'NOT vintage, NOT sepia-toned, NOT muted or washed-out or faded colors, NOT old-fashioned religious-pamphlet look',
-].join(', ');
+// pela família. Ilustração de livro infantil premium: pintura digital
+// cinematográfica, pincelada visível, NÃO um render 3D (nada de visual
+// Pixar/CGI) — mais perto de concept art pintada à mão.
+const STORYBOOK_STYLE_PREFIX = [
+    'Premium, high-end children\'s storybook illustration — the gallery-quality fine art direction of an award-winning hardcover picture book from a top publisher, NOT a generic or mass-market look. Cinematic hand-painted digital painting style, soft visible brushstrokes, cozy warm atmosphere, extremely expressive characters, magical lighting, artistic painted vignette at the frame edges',
+    'Every image must feel like a museum-worthy, collectible piece of book art — meticulous, polished, expensive-looking, the kind of illustration parents would frame, not a quick or generic children\'s app graphic',
+    'Character design: slightly oversized head, big but not oversized eyes, extremely innocent expression, rosy cheeks, minimal simple nose, simple mouth, very clean silhouette, simplified hands, exaggerated childlike proportions',
+    'Rendering quality is the key trait: this must look PAINTED, not rendered — soft brushstrokes, blended colors, slightly soft/diffused edges, painted volumes, organic gradients, no excessive sharpness, like a digital oil painting',
+    'Color palette: warm and desaturated — muted greens, golden yellows, cream, warm brown, soft orange; nothing oversaturated, a coherent warm harmony throughout',
+    'Lighting: cinematic golden-hour feel — god rays, volumetric light, golden light, soft bounce light, gentle bloom, extremely soft shadows',
+    'Environment: backgrounds stay soft, simplified and low-detail so they never compete with the character — painterly trees and foliage, huge sense of depth and atmosphere, generous breathing space (air) between elements, background painted in soft receding layers (foreground, character, midground, atmosphere, fully soft-focus distance)',
+    'Textures: no photographic textures anywhere — wood, stone, water, leaves and skin are all painted/illustrated, never photo-real',
+    'Overall feeling: every image should read as its own little story — curiosity, wonder, discovery, friendship, comfort',
+    'NOT a 3D render, NOT CGI, NOT a clean 3D-animated-movie look, NOT flat, NOT vector, NOT sticker-style, NOT plastic-looking',
+    'NOT vintage, NOT sepia-toned, NOT muted/washed-out in an old-fashioned way, NOT a religious-pamphlet look',
+].join('. ');
 function stylePrefix(_styleId) {
-    return DISNEY_STYLE_PREFIX;
+    return STORYBOOK_STYLE_PREFIX;
 }
 // O prompt em si é em inglês (pro modelo de imagem entender melhor), mas
 // isso faz o gpt-image-1 às vezes "escrever" palavras em inglês na própria

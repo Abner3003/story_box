@@ -172,35 +172,30 @@ export const OnboardingAnnotation = Annotation.Root({
     default: () => false,
   }),
 
-  // ── Foto da família (uma vez, no onboarding) ──────────────────
-  familyPhotoInvalid: Annotation<boolean>({
-    reducer: (_, b) => b,
-    default: () => false,
-  }),
-  // presença = tem alguém não identificado na foto, precisa perguntar quem é
-  familyUnclearNote: Annotation<string | undefined>({
+  // ── Cadastro de família (pai, mãe, avós... um a um, com foto própria) ──
+  familyMemberDraftName: Annotation<string | undefined>({
     reducer: (_, b) => b,
     default: () => undefined,
   }),
-  familyPhotoPathPending: Annotation<string | undefined>({
+  familyMemberDraftRole: Annotation<string | undefined>({
     reducer: (_, b) => b,
     default: () => undefined,
   }),
-  familyDescriptionPending: Annotation<string | undefined>({
-    reducer: (_, b) => b,
-    default: () => undefined,
-  }),
-  familySiblingPending: Annotation<boolean>({
+  familyMemberInfoInvalid: Annotation<boolean>({
     reducer: (_, b) => b,
     default: () => false,
   }),
-  familySiblingDetailsInvalid: Annotation<boolean>({
+  familyMemberPhotoInvalid: Annotation<boolean>({
     reducer: (_, b) => b,
     default: () => false,
   }),
-  familyClarificationCandidates: Annotation<string[]>({
+  familyMembersDone: Annotation<boolean>({
     reducer: (_, b) => b,
-    default: () => [],
+    default: () => false,
+  }),
+  familyListAddChosen: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
   }),
 
   // ── Foto de cada filho, no cadastro (uma vez por filho) ────────
@@ -217,20 +212,6 @@ export const OnboardingAnnotation = Annotation.Root({
   photoQueueIndex: Annotation<number>({
     reducer: (_, b) => b,
     default: () => 0,
-  }),
-  currentChildPhotoPath: Annotation<string | undefined>({
-    reducer: (_, b) => b,
-    default: () => undefined,
-  }),
-
-  // ── Estilo de ilustração ─────────────────────────────────────
-  styleOptions: Annotation<Array<{ id: string; label: string }>>({
-    reducer: (_, b) => b,
-    default: () => [],
-  }),
-  styleChoiceInvalid: Annotation<boolean>({
-    reducer: (_, b) => b,
-    default: () => false,
   }),
 
   // ── História do mês ──────────────────────────────────────────
@@ -260,7 +241,7 @@ export const OnboardingAnnotation = Annotation.Root({
   }),
 
   // ── Menu de conta (assinante já ativo, sem fluxo pendente) ────
-  menuChoice: Annotation<'help' | 'address' | 'new_book' | undefined>({
+  menuChoice: Annotation<'help' | 'address' | 'new_book' | 'family' | undefined>({
     reducer: (_, b) => b,
     default: () => undefined,
   }),

@@ -24,14 +24,11 @@ import { askChildSelectionNode } from './nodes/ask-child-selection.js'
 import { collectChildSelectionNode } from './nodes/collect-child-selection.js'
 import { askConsentNode } from './nodes/ask-consent.js'
 import { collectConsentNode } from './nodes/collect-consent.js'
-import { askFamilyPhotoNode } from './nodes/ask-family-photo.js'
-import { collectFamilyPhotoNode } from './nodes/collect-family-photo.js'
-import { collectFamilyClarificationNode } from './nodes/collect-family-clarification.js'
-import { collectFamilySiblingDetailsNode } from './nodes/collect-family-sibling-details.js'
+import { askFamilyMembersNode } from './nodes/ask-family-members.js'
+import { collectFamilyMemberInfoNode } from './nodes/collect-family-member-info.js'
+import { collectFamilyMemberPhotoNode } from './nodes/collect-family-member-photo.js'
 import { askPhotoNode } from './nodes/ask-photo.js'
 import { collectPhotoNode } from './nodes/collect-photo.js'
-import { askStyleChoiceNode } from './nodes/ask-style-choice.js'
-import { collectStyleChoiceNode } from './nodes/collect-style-choice.js'
 import { askStoryNode } from './nodes/ask-story.js'
 import { collectMomentPhotoNode } from './nodes/collect-moment-photo.js'
 import { collectMomentNode } from './nodes/collect-moment.js'
@@ -77,14 +74,11 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addNode('collect_child_selection',     collectChildSelectionNode)
   .addNode('ask_consent',                 askConsentNode)
   .addNode('collect_consent',             collectConsentNode)
-  .addNode('ask_family_photo',            askFamilyPhotoNode)
-  .addNode('collect_family_photo',        collectFamilyPhotoNode)
-  .addNode('collect_family_clarification', collectFamilyClarificationNode)
-  .addNode('collect_family_sibling_details', collectFamilySiblingDetailsNode)
+  .addNode('ask_family_members',          askFamilyMembersNode)
+  .addNode('collect_family_member_info',  collectFamilyMemberInfoNode)
+  .addNode('collect_family_member_photo', collectFamilyMemberPhotoNode)
   .addNode('ask_photo',                   askPhotoNode)
   .addNode('collect_photo',               collectPhotoNode)
-  .addNode('ask_style_choice',            askStyleChoiceNode)
-  .addNode('collect_style_choice',        collectStyleChoiceNode)
   .addNode('ask_story',                   askStoryNode)
   .addNode('collect_moment_photo',        collectMomentPhotoNode)
   .addNode('collect_moment',              collectMomentNode)
@@ -145,40 +139,28 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addConditionalEdges('collect_more_children', (state) =>
     editRoute(state) ?? (state.childrenDone ? 'ask_child_selection' : 'collect_child_birth'))
 
-  .addConditionalEdges('ask_child_selection', (state) => state.children.length > 1 ? 'collect_child_selection' : 'ask_family_photo')
+  .addConditionalEdges('ask_child_selection', (state) => state.children.length > 1 ? 'collect_child_selection' : 'ask_family_members')
   .addConditionalEdges('collect_child_selection', (state) =>
-    editRoute(state) ?? (state.childSelectionInvalid ? 'collect_child_selection' : 'ask_family_photo'))
+    editRoute(state) ?? (state.childSelectionInvalid ? 'collect_child_selection' : 'ask_family_members'))
 
-  .addEdge('ask_family_photo',     'collect_family_photo')
-  .addConditionalEdges('collect_family_photo', (state) => {
+  .addEdge('ask_family_members',  'collect_family_member_info')
+  .addConditionalEdges('collect_family_member_info', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
-    if (state.familyPhotoInvalid) return 'collect_family_photo'
-    return state.familyUnclearNote ? 'collect_family_clarification' : 'ask_photo'
+    if (state.familyMemberInfoInvalid) return 'collect_family_member_info'
+    return state.familyMembersDone ? 'ask_photo' : 'collect_family_member_photo'
   })
-  .addConditionalEdges('collect_family_clarification', (state) => {
+  .addConditionalEdges('collect_family_member_photo', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
-    return state.familySiblingPending ? 'collect_family_sibling_details' : 'ask_photo'
-  })
-  .addConditionalEdges('collect_family_sibling_details', (state) => {
-    const edit = editRoute(state)
-    if (edit) return edit
-    return state.familySiblingDetailsInvalid ? 'collect_family_sibling_details' : 'ask_photo'
+    return state.familyMemberPhotoInvalid ? 'collect_family_member_photo' : 'collect_family_member_info'
   })
 
   .addEdge('ask_photo',            'collect_photo')
   .addConditionalEdges('collect_photo', (state) => {
     const edit = editRoute(state)
     if (edit) return edit
-    return state.photoInvalid ? 'collect_photo' : 'ask_style_choice'
-  })
-
-  .addEdge('ask_style_choice',     'collect_style_choice')
-  .addConditionalEdges('collect_style_choice', (state) => {
-    const edit = editRoute(state)
-    if (edit) return edit
-    if (state.styleChoiceInvalid) return 'collect_style_choice'
+    if (state.photoInvalid) return 'collect_photo'
     return state.photoQueueIndex < state.featuredChildIndices.length ? 'collect_photo' : 'ask_story'
   })
 

@@ -35,6 +35,20 @@ CREATE TABLE children (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Family members (pai, mãe, avós etc — cadastrados um a um com foto própria,
+-- pra servir de referência real nas ilustrações, em vez de tentar adivinhar
+-- quem é quem a partir de uma única foto de grupo)
+CREATE TABLE family_members (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subscriber_id       UUID NOT NULL REFERENCES subscribers(id) ON DELETE CASCADE,
+  name                TEXT NOT NULL,
+  role                TEXT,           -- papel digitado livre pela família: "mamãe", "papai", "avó"
+  visual_profile      JSONB,          -- VisualProfile extraído da foto
+  photo_storage_path  TEXT,           -- path no Supabase Storage
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Monthly collections
 CREATE TABLE monthly_collections (
   id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

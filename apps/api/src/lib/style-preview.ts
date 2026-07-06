@@ -12,31 +12,25 @@ export interface StylePreset {
   prompt: string
 }
 
+// "no text" porque essas imagens passam a ser guardadas como referência
+// permanente do personagem (não só uma prévia descartável) — texto/letras
+// erradas renderizadas aqui contaminariam todas as páginas futuras que usam
+// essa imagem como base.
+const NO_TEXT_SUFFIX = ' Absolutely no text, no words, no letters rendered in the image.'
+
+// Identidade visual única do produto — não existe mais escolha de estilo.
 export const STYLE_PRESETS: StylePreset[] = [
   {
-    id: 'watercolor',
-    label: 'Aquarela',
+    id: 'disney',
+    label: 'Animação 3D',
     prompt:
-      'Redraw this exact child as a warm, soft watercolor children\'s book illustration. Gentle brush strokes, ' +
-      'pastel color palette, storybook style. Keep the same facial features, hair and identity as the reference photo.',
-  },
-  {
-    id: 'cartoon3d',
-    label: 'Cartoon 3D',
-    prompt:
-      'Redraw this exact child as a cute 3D animated cartoon character, in the style of modern animated movies. ' +
-      'Big expressive eyes, soft lighting, vibrant colors. Keep the same facial features, hair and identity as the reference photo.',
-  },
-  {
-    id: 'flat',
-    label: 'Ilustração Flat',
-    prompt:
-      'Redraw this exact child as a modern flat vector illustration for a children\'s book cover. ' +
-      'Clean shapes, bold flat colors, minimal shading. Keep the same facial features, hair and identity as the reference photo.',
+      'Redraw this exact person in a modern 3D animated feature-film style, like a big-budget contemporary American ' +
+      'animation studio production. Big expressive eyes, warm and appealing character design, soft cel-shaded/painterly ' +
+      'rendering, cinematic lighting, rich saturated colors. Keep the same facial features, hair and identity as the reference photo.' + NO_TEXT_SUFFIX,
   },
 ]
 
-async function generateStylePreview(
+export async function generateStylePreview(
   base64Image: string,
   mimeType: string,
   style: StylePreset,
@@ -58,19 +52,14 @@ async function generateStylePreview(
   return b64
 }
 
-export interface StylePreviewResult {
-  style: StylePreset
-  base64Png: string
-}
-
-export async function generateAllStylePreviews(
+// Gera o retrato já estilizado de UMA pessoa (protagonista ou familiar) num
+// estilo específico — usado quando ainda não existe uma referência estilizada
+// guardada pra essa pessoa nesse estilo.
+export async function generateStyledPortrait(
   base64Image: string,
   mimeType: string,
-): Promise<StylePreviewResult[]> {
-  return Promise.all(
-    STYLE_PRESETS.map(async (style) => ({
-      style,
-      base64Png: await generateStylePreview(base64Image, mimeType, style),
-    })),
-  )
+  styleId: string,
+): Promise<string> {
+  const style = STYLE_PRESETS.find((s) => s.id === styleId) ?? STYLE_PRESETS[0]
+  return generateStylePreview(base64Image, mimeType, style)
 }

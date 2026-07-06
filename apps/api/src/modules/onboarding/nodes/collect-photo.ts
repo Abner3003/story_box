@@ -61,15 +61,23 @@ export async function collectPhotoNode(state: OnboardingState): Promise<Partial<
     const currentIndex = state.featuredChildIndices[state.photoQueueIndex]
     const currentChildId = state.childIds[currentIndex]
 
-    let photoPath: string | undefined
     if (currentChildId) {
-      if (base64) photoPath = await uploadChildPhoto(currentChildId, base64, mimeType)
-      await saveChildVisualProfile(currentChildId, profile, photoPath)
+      const photoPath = base64 ? await uploadChildPhoto(currentChildId, base64, mimeType) : undefined
+      // Identidade visual única do produto (estilo Disney) — não existe mais
+      // escolha de estilo pela família.
+      await saveChildVisualProfile(currentChildId, { ...profile, chosen_style: 'disney' }, photoPath)
     }
 
-    await sendText(state.phone, '📸 Foto analisada com sucesso!')
+    const nextQueueIndex = state.photoQueueIndex + 1
+    const nextChild = state.children[state.featuredChildIndices[nextQueueIndex]]
 
-    return { photoInvalid: false, currentChildPhotoPath: photoPath, editIntent: undefined }
+    if (nextChild) {
+      await sendText(state.phone, `📸 Foto analisada com sucesso!\n\nAgora me mande uma foto recente de *${nextChild.name}*!`)
+    } else {
+      await sendText(state.phone, '📸 Foto analisada com sucesso! Perfil visual criado.')
+    }
+
+    return { photoInvalid: false, photoQueueIndex: nextQueueIndex, editIntent: undefined }
   } catch {
     await sendText(state.phone, '❌ Não consegui processar a foto. Por favor, envie outra imagem com boa iluminação:')
     return { photoInvalid: true, editIntent: undefined }

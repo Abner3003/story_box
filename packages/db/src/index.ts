@@ -29,8 +29,6 @@ export type Subscriber = {
   abacatepay_plan_id?: string
   is_recurring: boolean
   last_weekly_kickoff_sent_at?: string
-  family_photo_path?: string
-  family_description?: string
   created_at: string
   updated_at: string
 }
@@ -48,6 +46,17 @@ export type Child = {
   updated_at: string
 }
 
+export type FamilyMember = {
+  id: string
+  subscriber_id: string
+  name: string
+  role?: string                  // papel na família, digitado livre: "mamãe", "papai", "avó"...
+  visual_profile?: VisualProfile // extraído da foto via GPT-4o Vision
+  photo_storage_path?: string    // path no Supabase Storage
+  created_at: string
+  updated_at: string
+}
+
 export interface VisualProfile {
   age_description: string        // "2-year-old"
   hair: string                   // "curly brown hair"
@@ -55,6 +64,11 @@ export interface VisualProfile {
   skin: string                   // "warm medium skin tone"
   raw_description: string        // texto completo retornado pelo GPT-4o Vision
   chosen_style?: string          // rótulo do estilo escolhido pelo responsável, ex: "Aquarela"
+  // Retrato já estilizado (gerado uma vez a partir da foto real) — usado como
+  // referência em toda página/capa gerada depois, em vez da foto crua, pra
+  // manter a mesma aparência consistente do personagem ao longo do livro.
+  styled_reference_path?: string
+  styled_reference_style?: string // estilo em que essa referência foi gerada (pra saber se ficou desatualizada)
 }
 
 export type MonthlyCollection = {
@@ -172,6 +186,20 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: 'children_subscriber_id_fkey'
+            columns: ['subscriber_id']
+            isOneToOne: false
+            referencedRelation: 'subscribers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      family_members: {
+        Row: FamilyMember
+        Insert: Omit<FamilyMember, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<FamilyMember, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: [
+          {
+            foreignKeyName: 'family_members_subscriber_id_fkey'
             columns: ['subscriber_id']
             isOneToOne: false
             referencedRelation: 'subscribers'
@@ -301,7 +329,7 @@ export function getSupabaseClient(): SupabaseClient<Database> {
 export const StoragePaths = {
   childPhoto:      (childId: string, month: string) => `children/${childId}/photos/${month}.jpg`,
   momentPhoto:     (childId: string, period: string) => `children/${childId}/moments/${period}.jpg`,
-  familyPhoto:     (subscriberId: string)           => `subscribers/${subscriberId}/family.jpg`,
+  familyMemberPhoto: (memberId: string)              => `family_members/${memberId}/photo.jpg`,
   stylePreview:    (childId: string, styleId: string) => `children/${childId}/style-previews/${styleId}.png`,
   bookPdf:         (bookId: string)                 => `books/${bookId}/book.pdf`,
   bookCover:       (bookId: string)                 => `books/${bookId}/cover.png`,

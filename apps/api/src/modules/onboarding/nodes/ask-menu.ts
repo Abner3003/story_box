@@ -1,12 +1,26 @@
 import { sendButtons, sendText } from '../../../lib/whatsapp.js'
 import { getLatestBookForSubscriber, describeBookStatus } from '../../account/account.repository.js'
+import { formatOptionsList } from './show-plans.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
-const MENU_BUTTONS = [
+const MAX_NATIVE_BUTTONS = 3
+
+const MENU_OPTIONS = [
   { id: 'menu_help', title: 'Ajuda' },
   { id: 'menu_address', title: 'Alterar endereço' },
   { id: 'menu_new_book', title: 'Gerar outro livro' },
+  { id: 'menu_family', title: 'Cadastrar família' },
 ]
+
+async function sendMenu(phone: string): Promise<void> {
+  if (MENU_OPTIONS.length <= MAX_NATIVE_BUTTONS) {
+    await sendButtons(phone, 'Como posso te ajudar?', MENU_OPTIONS)
+    return
+  }
+
+  const list = MENU_OPTIONS.map((opt, i) => `*${i + 1}* - ${opt.title}`).join('\n')
+  await sendText(phone, `Como posso te ajudar?\n\n${list}\n\nDigite ${formatOptionsList(MENU_OPTIONS.length)}:`)
+}
 
 export async function askMenuNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
   if (state.subscriberId) {
@@ -19,9 +33,9 @@ export async function askMenuNode(state: OnboardingState): Promise<Partial<Onboa
     }
   }
 
-  await sendButtons(state.phone, 'Como posso te ajudar?', MENU_BUTTONS)
+  await sendMenu(state.phone)
 
   return {}
 }
 
-export { MENU_BUTTONS }
+export { MENU_OPTIONS, sendMenu }

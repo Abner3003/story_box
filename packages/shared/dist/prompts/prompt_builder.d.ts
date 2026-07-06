@@ -13,7 +13,7 @@ export interface VisualProfile {
     skin: string;
     raw_description: string;
 }
-export type StyleId = 'watercolor' | 'cartoon3d' | 'flat';
+export type StyleId = 'disney';
 /**
  * Monta o prompt completo para uma página
  *

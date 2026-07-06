@@ -1,8 +1,7 @@
 import { getSupabaseClient, StoragePaths } from '@storybox/db'
-import type { VisualProfile, SubscriberPlan, SubscriberStatus, Subscriber, Child } from '@storybox/db'
+import type { VisualProfile, SubscriberPlan, SubscriberStatus, Subscriber, Child, FamilyMember } from '@storybox/db'
 
 const ASSETS_BUCKET = 'storybox-assets'
-const STYLE_PREVIEW_SIGNED_URL_TTL = 60 * 60 * 24 // 1 dia
 
 export async function upsertSubscriber(data: {
   phone: string
@@ -158,6 +157,28 @@ export async function saveChildVisualProfile(childId: string, profile: VisualPro
   if (error) throw error
 }
 
+export async function uploadChildStyledReference(childId: string, styleId: string, base64Png: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = StoragePaths.stylePreview(childId, styleId)
+  const buffer = Buffer.from(base64Png, 'base64')
+
+  const { error } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: 'image/png', upsert: true })
+  if (error) throw error
+
+  return path
+}
+
+export async function saveChildStyledReference(childId: string, profile: VisualProfile, path: string, styleId: string) {
+  const db = getSupabaseClient()
+  const { error } = await db
+    .from('children')
+    .update({ visual_profile: { ...profile, styled_reference_path: path, styled_reference_style: styleId } })
+    .eq('id', childId)
+  if (error) throw error
+}
+
 export async function uploadChildPhoto(childId: string, base64: string, mimeType: string): Promise<string> {
   const db = getSupabaseClient()
   const path = StoragePaths.childPhoto(childId, new Date().toISOString().slice(0, 7))
@@ -184,9 +205,30 @@ export async function uploadMomentPhoto(childId: string, base64: string, mimeTyp
   return path
 }
 
-export async function uploadFamilyPhoto(subscriberId: string, base64: string, mimeType: string): Promise<string> {
+export async function createFamilyMember(data: { subscriber_id: string; name: string; role?: string }): Promise<string> {
   const db = getSupabaseClient()
-  const path = StoragePaths.familyPhoto(subscriberId)
+  const { data: row, error } = await db
+    .from('family_members')
+    .insert(data)
+    .select('id')
+    .single()
+  if (error) throw error
+  return row.id as string
+}
+
+export async function getFamilyMembersForSubscriber(subscriberId: string): Promise<FamilyMember[]> {
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('family_members')
+    .select('*')
+    .eq('subscriber_id', subscriberId)
+  if (error) throw error
+  return data ?? []
+}
+
+export async function uploadFamilyMemberPhoto(memberId: string, base64: string, mimeType: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = StoragePaths.familyMemberPhoto(memberId)
   const buffer = Buffer.from(base64, 'base64')
 
   const { error } = await db.storage
@@ -197,12 +239,34 @@ export async function uploadFamilyPhoto(subscriberId: string, base64: string, mi
   return path
 }
 
-export async function saveFamilyAppearance(subscriberId: string, photoPath: string, description: string) {
+export async function saveFamilyMemberVisualProfile(memberId: string, profile: VisualProfile, photoPath?: string) {
   const db = getSupabaseClient()
   const { error } = await db
-    .from('subscribers')
-    .update({ family_photo_path: photoPath, family_description: description })
-    .eq('id', subscriberId)
+    .from('family_members')
+    .update({ visual_profile: profile, photo_storage_path: photoPath })
+    .eq('id', memberId)
+  if (error) throw error
+}
+
+export async function uploadFamilyMemberStyledReference(memberId: string, styleId: string, base64Png: string): Promise<string> {
+  const db = getSupabaseClient()
+  const path = `family_members/${memberId}/styled/${styleId}.png`
+  const buffer = Buffer.from(base64Png, 'base64')
+
+  const { error } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: 'image/png', upsert: true })
+  if (error) throw error
+
+  return path
+}
+
+export async function saveFamilyMemberStyledReference(memberId: string, profile: VisualProfile, path: string, styleId: string) {
+  const db = getSupabaseClient()
+  const { error } = await db
+    .from('family_members')
+    .update({ visual_profile: { ...profile, styled_reference_path: path, styled_reference_style: styleId } })
+    .eq('id', memberId)
   if (error) throw error
 }
 
@@ -215,25 +279,8 @@ export async function downloadChildPhoto(path: string): Promise<{ base64: string
   return { base64: buffer.toString('base64'), mimeType: data.type || 'image/jpeg' }
 }
 
-export async function uploadStylePreview(childId: string, styleId: string, base64Png: string): Promise<string> {
-  const db = getSupabaseClient()
-  const path = StoragePaths.stylePreview(childId, styleId)
-  const buffer = Buffer.from(base64Png, 'base64')
 
-  const { error } = await db.storage
-    .from(ASSETS_BUCKET)
-    .upload(path, buffer, { contentType: 'image/png', upsert: true })
-  if (error) throw error
-
-  const { data, error: signError } = await db.storage
-    .from(ASSETS_BUCKET)
-    .createSignedUrl(path, STYLE_PREVIEW_SIGNED_URL_TTL)
-  if (signError || !data) throw signError ?? new Error('Falha ao gerar signed URL do preview de estilo')
-
-  return data.signedUrl
-}
-
-export async function saveChildStyleChoice(childId: string, styleLabel: string) {
+export async function saveChildStyleChoice(childId: string, styleId: string) {
   const db = getSupabaseClient()
   const { data: row, error: fetchError } = await db
     .from('children')
@@ -244,9 +291,19 @@ export async function saveChildStyleChoice(childId: string, styleLabel: string) 
 
   const currentProfile = (row?.visual_profile as VisualProfile | null) ?? ({} as VisualProfile)
 
+  // A prévia de estilo que a família acabou de escolher já foi enviada pro
+  // Storage nesse mesmo path (ask-style-choice.ts) — reusa como referência
+  // estilizada permanente do personagem, em vez de gerar de novo depois.
   const { error } = await db
     .from('children')
-    .update({ visual_profile: { ...currentProfile, chosen_style: styleLabel } })
+    .update({
+      visual_profile: {
+        ...currentProfile,
+        chosen_style: styleId,
+        styled_reference_path: StoragePaths.stylePreview(childId, styleId),
+        styled_reference_style: styleId,
+      },
+    })
     .eq('id', childId)
   if (error) throw error
 }

@@ -5,9 +5,9 @@ import { buildIllustrationPrompt } from '@storybox/shared'
 import type { StoryJSON } from '@storybox/db'
 import { getBookById } from '../modules/admin/admin.repository.js'
 import { getCollectionForGeneration, updateBook, uploadBookAsset, StoragePaths } from '../modules/generation/generation.repository.js'
-import { getSubscriberById } from '../modules/payment/payment.repository.js'
-import { downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
+import { downloadChildPhoto, getFamilyMembersForSubscriber } from '../modules/onboarding/onboarding.repository.js'
 import { generateImage, type ReferenceImage } from '../lib/illustration.js'
+import { resolveChildReference, resolveFamilyMemberReference } from '../lib/character-reference.js'
 import { assembleBookPdf } from '../lib/pdf.js'
 
 interface RegenPageJobData {
@@ -35,8 +35,13 @@ const worker = new Worker<RegenPageJobData>(
     if (!visualProfile) throw new Error(`Criança ${child.id} sem visual_profile`)
 
     const subscriberId = book.monthly_collections?.subscriber_id
-    const subscriber = subscriberId ? await getSubscriberById(subscriberId) : null
-    const familyDescription = subscriber?.family_description || undefined
+    const familyMembers = subscriberId ? await getFamilyMembersForSubscriber(subscriberId) : []
+    const familyMembersWithProfile = familyMembers.filter((m) => m.visual_profile?.raw_description)
+    const familyDescription = familyMembersWithProfile.length
+      ? familyMembersWithProfile
+          .map((m) => `${m.role ? `${m.role} (${m.name})` : m.name}: ${m.visual_profile!.raw_description}`)
+          .join('\n')
+      : undefined
     const styleId = visualProfile.chosen_style ?? 'watercolor'
 
     const scenePrompt = notes
@@ -44,10 +49,17 @@ const worker = new Worker<RegenPageJobData>(
       : targetPage.illustration_prompt
 
     const references: ReferenceImage[] = []
-    if (child.photo_storage_path) references.push(await downloadChildPhoto(child.photo_storage_path))
-    if (subscriber?.family_photo_path) references.push(await downloadChildPhoto(subscriber.family_photo_path))
+    const childReference = await resolveChildReference(child, styleId)
+    if (childReference) references.push(childReference)
+
+    const familyMembersWithPhoto = familyMembers.filter((m) => m.photo_storage_path)
+    const familyReferences = (await Promise.all(
+      familyMembersWithPhoto.map((member) => resolveFamilyMemberReference(member, styleId)),
+    )).filter((ref): ref is ReferenceImage => ref !== null)
+    references.push(...familyReferences)
+
     const referenceNote = references.length
-      ? `\n\nReference photos attached — the first shows the real protagonist (${child.name}); it is essential (non-negotiable) that their skin tone, facial features and overall identity stay consistent with this reference, rendered in the ${styleId} style described above.${subscriber?.family_photo_path ? ' The next one shows real family members present in the scene — their skin tone and features must also be visibly consistent with this family (same likeness, adapted to the same illustration style), not generic or unrelated-looking people.' : ''}`
+      ? `\n\nReference photos attached — the first shows the real protagonist (${child.name}); it is essential (non-negotiable) that their skin tone, facial features and overall identity stay consistent with this reference, rendered in the ${styleId} style described above.${familyMembersWithPhoto.length ? ` The following photo(s) show real family members present in the scene (${familyMembersWithPhoto.map((m) => m.role ? `${m.name} — ${m.role}` : m.name).join(', ')}) — their skin tone and features must also be visibly consistent with these references (same likeness, adapted to the same illustration style), not generic or unrelated-looking people.` : ''}`
       : ''
 
     const prompt = buildIllustrationPrompt(scenePrompt, child.name, visualProfile, styleId, familyDescription) + referenceNote

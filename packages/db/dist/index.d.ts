@@ -15,8 +15,6 @@ export type Subscriber = {
     abacatepay_plan_id?: string;
     is_recurring: boolean;
     last_weekly_kickoff_sent_at?: string;
-    family_photo_path?: string;
-    family_description?: string;
     created_at: string;
     updated_at: string;
 };
@@ -32,6 +30,16 @@ export type Child = {
     created_at: string;
     updated_at: string;
 };
+export type FamilyMember = {
+    id: string;
+    subscriber_id: string;
+    name: string;
+    role?: string;
+    visual_profile?: VisualProfile;
+    photo_storage_path?: string;
+    created_at: string;
+    updated_at: string;
+};
 export interface VisualProfile {
     age_description: string;
     hair: string;
@@ -39,6 +47,8 @@ export interface VisualProfile {
     skin: string;
     raw_description: string;
     chosen_style?: string;
+    styled_reference_path?: string;
+    styled_reference_style?: string;
 }
 export type MonthlyCollection = {
     id: string;
@@ -150,6 +160,20 @@ export interface Database {
                     }
                 ];
             };
+            family_members: {
+                Row: FamilyMember;
+                Insert: Omit<FamilyMember, 'id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<FamilyMember, 'id' | 'created_at' | 'updated_at'>>;
+                Relationships: [
+                    {
+                        foreignKeyName: 'family_members_subscriber_id_fkey';
+                        columns: ['subscriber_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'subscribers';
+                        referencedColumns: ['id'];
+                    }
+                ];
+            };
             monthly_collections: {
                 Row: MonthlyCollection;
                 Insert: Omit<MonthlyCollection, 'id' | 'created_at' | 'updated_at'>;
@@ -253,7 +277,7 @@ export declare function getSupabaseClient(): SupabaseClient<Database>;
 export declare const StoragePaths: {
     readonly childPhoto: (childId: string, month: string) => string;
     readonly momentPhoto: (childId: string, period: string) => string;
-    readonly familyPhoto: (subscriberId: string) => string;
+    readonly familyMemberPhoto: (memberId: string) => string;
     readonly stylePreview: (childId: string, styleId: string) => string;
     readonly bookPdf: (bookId: string) => string;
     readonly bookCover: (bookId: string) => string;

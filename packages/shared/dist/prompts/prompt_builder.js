@@ -6,43 +6,21 @@
  * 2. Visual profile da criança (extraído da foto)
  * 3. Descrição da cena (gerada pelo LLM por página)
  */
-const DEFAULT_STYLE = 'watercolor';
-// Um prefixo de estilo por opção oferecida em ask-style-choice.ts — mesmo
-// espírito dos prompts de preview (style-preview.ts), mas escritos para
-// geração de cena via texto (images.generate), não edição de foto (images.edit).
-const STYLE_PREFIXES = {
-    watercolor: [
-        'Children\'s picture book illustration in a modern, vibrant painterly watercolor style, like a contemporary award-winning picture book published today',
-        'rich, saturated, joyful color palette — bright and cheerful, never dull',
-        'visible brushwork and gouache texture, warm lighting and soft shadows giving real depth and volume',
-        'detailed, believable background environment (not a blank/minimal backdrop)',
-        'characters with naturalistic proportions and expressive, warm, contemporary faces',
-        'award-winning professional children\'s book illustration quality',
-        'NOT flat, NOT vector, NOT sticker-style, NOT plastic-looking',
-        'NOT vintage, NOT sepia-toned, NOT muted or washed-out or faded colors, NOT old-fashioned religious-pamphlet look',
-    ].join(', '),
-    cartoon3d: [
-        'Children\'s picture book illustration, painterly 3D-rendered look, modern and vibrant like a contemporary animated feature',
-        'rich, saturated, joyful color palette — bright and cheerful, never dull or faded',
-        'soft cinematic lighting with real depth of field and gentle shadows',
-        'richly detailed, textured background environment',
-        'big expressive eyes but otherwise naturalistic proportions and skin/hair texture',
-        'award-winning professional children\'s book illustration quality',
-        'NOT flat, NOT vector, NOT sticker-style, NOT vintage, NOT sepia-toned, NOT muted colors',
-    ].join(', '),
-    flat: [
-        'Children\'s book illustration',
-        'modern flat vector style',
-        'clean shapes',
-        'bold, vibrant, saturated flat colors — bright and cheerful, never muted or dull',
-        'minimal shading',
-        'detailed background environment matching the scene',
-        'professional children\'s book quality',
-        'NOT vintage, NOT sepia-toned, NOT washed-out colors',
-    ].join(', '),
-};
-function stylePrefix(styleId) {
-    return STYLE_PREFIXES[styleId] ?? STYLE_PREFIXES[DEFAULT_STYLE];
+// Identidade visual única do produto — não existe mais escolha de estilo
+// pela família. Estilo de animação 3D contemporâneo (tipo grandes estúdios
+// de animação americanos atuais), não aquarela/flat/vintage.
+const DISNEY_STYLE_PREFIX = [
+    'Children\'s picture book illustration in a modern 3D animated feature-film style, like a big-budget contemporary American animation studio production',
+    'big expressive eyes, warm and appealing character design, soft cel-shaded/painterly rendering with real depth and volume',
+    'rich, saturated, joyful color palette — bright, cheerful, cinematic',
+    'soft cinematic lighting with gentle shadows and a magical, heartwarming atmosphere',
+    'richly detailed, believable background environment (not a blank/minimal backdrop)',
+    'award-winning professional animated-feature illustration quality',
+    'NOT flat, NOT vector, NOT sticker-style, NOT plastic-looking',
+    'NOT vintage, NOT sepia-toned, NOT muted or washed-out or faded colors, NOT old-fashioned religious-pamphlet look',
+].join(', ');
+function stylePrefix(_styleId) {
+    return DISNEY_STYLE_PREFIX;
 }
 // O prompt em si é em inglês (pro modelo de imagem entender melhor), mas
 // isso faz o gpt-image-1 às vezes "escrever" palavras em inglês na própria

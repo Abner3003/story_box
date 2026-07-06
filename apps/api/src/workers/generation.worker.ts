@@ -13,8 +13,8 @@ import {
 import { generateStory, calculateAge } from '../lib/story.js'
 import { generateImage, type ReferenceImage } from '../lib/illustration.js'
 import { assembleBookPdf } from '../lib/pdf.js'
-import { getSubscriberById } from '../modules/payment/payment.repository.js'
-import { downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
+import { getFamilyMembersForSubscriber } from '../modules/onboarding/onboarding.repository.js'
+import { resolveChildReference, resolveFamilyMemberReference } from '../lib/character-reference.js'
 
 interface GenerateBookJobData {
   subscriberId: string
@@ -51,25 +51,36 @@ const worker = new Worker<GenerateBookJobData>(
     // vira enredo, mesmo sem ter nada a ver com o momento que a família contou.
     const momentText = collection.moment_text ?? ''
 
-    const subscriber = await getSubscriberById(job.data.subscriberId)
-    const familyDescription = subscriber.family_description || undefined
+    // Cada pessoa da família foi cadastrada com nome/papel/foto própria (não
+    // é mais uma única foto de grupo analisada por IA) — isso alimenta tanto
+    // a descrição em texto quanto, principalmente, as fotos de referência
+    // reais passadas pro gerador de imagem.
+    const familyMembers = await getFamilyMembersForSubscriber(job.data.subscriberId)
+    const familyMembersWithProfile = familyMembers.filter((m) => m.visual_profile?.raw_description)
+    const familyDescription = familyMembersWithProfile.length
+      ? familyMembersWithProfile
+          .map((m) => `${m.role ? `${m.role} (${m.name})` : m.name}: ${m.visual_profile!.raw_description}`)
+          .join('\n')
+      : undefined
 
-    // Descrição em texto (visual_profile/family_description) sozinha nunca
-    // produz semelhança real com a foto — o gpt-image-1 só "vê" a pessoa de
-    // verdade se a foto entrar como referência (images.edit em vez de
-    // images.generate). Baixa a foto da criança e da família uma vez só e
-    // reusa em todas as páginas + capa.
+    // Descrição em texto sozinha nunca produz semelhança real com a foto — o
+    // gpt-image-1 só "vê" a pessoa de verdade se a foto entrar como
+    // referência. E em vez de reusar a foto CRUA em toda página (o que deixa
+    // a aparência do personagem variar de página pra página), resolve pra um
+    // retrato já estilizado — gerado uma vez e cacheado — pra manter a mesma
+    // cara em todo o livro.
     const references: ReferenceImage[] = []
-    if (child.photo_storage_path) {
-      const childPhoto = await downloadChildPhoto(child.photo_storage_path)
-      references.push(childPhoto)
-    }
-    if (subscriber.family_photo_path) {
-      const familyPhoto = await downloadChildPhoto(subscriber.family_photo_path)
-      references.push(familyPhoto)
-    }
+    const childReference = await resolveChildReference(child, styleId)
+    if (childReference) references.push(childReference)
+
+    const familyMembersWithPhoto = familyMembers.filter((m) => m.photo_storage_path)
+    const familyReferences = (await Promise.all(
+      familyMembersWithPhoto.map((member) => resolveFamilyMemberReference(member, styleId)),
+    )).filter((ref): ref is ReferenceImage => ref !== null)
+    references.push(...familyReferences)
+
     const referenceNote = references.length
-      ? `\n\nReference photos attached — the first shows the real protagonist (${child.name}); it is essential (non-negotiable) that their skin tone, facial features and overall identity stay consistent with this reference, rendered in the ${styleId} style described above.${subscriber.family_photo_path ? ' The next one shows real family members present in the scene — their skin tone and features must also be visibly consistent with this family (same likeness, adapted to the same illustration style), not generic or unrelated-looking people.' : ''}`
+      ? `\n\nReference photos attached — the first shows the real protagonist (${child.name}); it is essential (non-negotiable) that their skin tone, facial features and overall identity stay consistent with this reference, rendered in the ${styleId} style described above.${familyMembersWithPhoto.length ? ` The following photo(s) show real family members present in the scene (${familyMembersWithPhoto.map((m) => m.role ? `${m.name} — ${m.role}` : m.name).join(', ')}) — their skin tone and features must also be visibly consistent with these references (same likeness, adapted to the same illustration style), not generic or unrelated-looking people.` : ''}`
       : ''
 
     const story = await generateStory({

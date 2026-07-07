@@ -41,7 +41,12 @@ const graph = new StateGraph(OnboardingAnnotation)
   .addConditionalEdges('collect_child_selection', (state) =>
     state.childSelectionInvalid ? 'collect_child_selection' : 'ask_photo')
 
-  .addEdge('ask_photo',            'collect_photo')
+  .addConditionalEdges('ask_photo', (state) => {
+    if (state.photoAlreadyOnFile) {
+      return state.photoQueueIndex < state.featuredChildIndices.length ? 'ask_photo' : 'ask_story'
+    }
+    return 'collect_photo'
+  })
   .addConditionalEdges('collect_photo', (state) => {
     if (state.photoInvalid) return 'collect_photo'
     return state.photoQueueIndex < state.featuredChildIndices.length ? 'collect_photo' : 'ask_story'

@@ -18,10 +18,9 @@ export async function collectPurchaseTypeNode(state: OnboardingState): Promise<P
     return { purchaseType: 'subscription', purchaseTypeInvalid: false }
   }
 
-  await sendText(state.phone, '❌ Opção inválida. Escolha uma das opções abaixo:')
   await sendButtons(
     state.phone,
-    'Escolha uma opção:',
+    '❌ Opção inválida. Escolha uma das opções abaixo:',
     [
       { id: 'purchase_one_time', title: '1 - Livro único' },
       { id: 'purchase_subscription', title: '2 - Assinatura' },

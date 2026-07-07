@@ -101,6 +101,17 @@ export async function getChildrenForSubscriber(subscriberId: string): Promise<Ch
   return data ?? []
 }
 
+export async function getChildById(childId: string): Promise<Child | null> {
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('children')
+    .select('*')
+    .eq('id', childId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function findSubscribersDueForWeeklyKickoff(): Promise<Subscriber[]> {
   const db = getSupabaseClient()
   // "Devido" = ainda não recebeu convite nesta semana calendário (segunda a

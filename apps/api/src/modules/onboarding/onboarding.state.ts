@@ -213,6 +213,10 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => 0,
   }),
+  photoAlreadyOnFile: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
 
   // ── História do mês ──────────────────────────────────────────
   storyMoment: Annotation<string | undefined>({

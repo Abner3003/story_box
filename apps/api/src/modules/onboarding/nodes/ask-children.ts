@@ -8,6 +8,7 @@ export async function askChildrenNode(state: OnboardingState): Promise<Partial<O
     childIds: [],
     featuredChildIndices: [],
     childrenDone: false,
+    photoQueueIndex: 0,
     editIntent: undefined,
     returnTo: undefined,
   }

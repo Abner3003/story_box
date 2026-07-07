@@ -6,6 +6,8 @@ import type { OnboardingState } from '../onboarding.state.js'
 
 const FALLBACK_INTRO = 'Que nome lindo! 💛'
 
+export const CHILDREN_DONE_BUTTON = { id: 'children_done', title: 'Terminei' }
+
 export async function collectMoreChildrenNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
   const raw = interrupt<string>(`awaiting_more_children_${state.children.length}`)
 
@@ -14,7 +16,7 @@ export async function collectMoreChildrenNode(state: OnboardingState): Promise<P
 
   const trimmed = raw.trim()
 
-  if (/^n(ão|ao)?$/i.test(trimmed)) {
+  if (/^n(ão|ao)?$/i.test(trimmed) || trimmed === CHILDREN_DONE_BUTTON.id) {
     await sendText(state.phone, `✅ ${state.children.length} filho(s) cadastrado(s)!`)
     return { childrenDone: true, editIntent: undefined }
   }

@@ -24,10 +24,9 @@ export async function collectConsentNode(state: OnboardingState): Promise<Partia
     return { imageConsentAccepted: false, consentInvalid: false, editIntent: undefined }
   }
 
-  await sendText(state.phone, '❌ Por favor, escolha *1* para aceitar ou *2* para não aceitar.')
   await sendButtons(
     state.phone,
-    'Após ler os termos, escolha uma opção:',
+    '❌ Por favor, escolha *1* para aceitar ou *2* para não aceitar:',
     [
       { id: 'consent_accept', title: '1 - Aceito' },
       { id: 'consent_decline', title: '2 - Não aceito' },

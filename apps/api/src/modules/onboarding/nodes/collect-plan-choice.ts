@@ -25,9 +25,10 @@ export async function collectPlanChoiceNode(state: OnboardingState): Promise<Par
   const selectedPlan = state.availablePlans[index]
 
   if (!selectedPlan) {
-    await sendText(state.phone, `❌ Opção inválida. Escolha ${formatOptionsList(state.availablePlans.length)}:`)
     if (state.availablePlans.length <= MAX_NATIVE_BUTTONS) {
-      await sendButtons(state.phone, 'Escolha uma opção:', buildPlanButtons(state.availablePlans.length))
+      await sendButtons(state.phone, '❌ Opção inválida. Escolha uma opção:', buildPlanButtons(state.availablePlans.length))
+    } else {
+      await sendText(state.phone, `❌ Opção inválida. Escolha ${formatOptionsList(state.availablePlans.length)}:`)
     }
     return { planChoiceInvalid: true }
   }

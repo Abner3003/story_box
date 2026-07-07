@@ -1,20 +1,33 @@
 import { interrupt } from '@langchain/langgraph'
-import { sendText, downloadMedia } from '../../../lib/whatsapp.js'
+import { sendButtons, sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
 import { saveChildVisualProfile, uploadChildPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import { maxChildrenForPlan } from '../max-children.js'
+import { CHILDREN_DONE_BUTTON } from './collect-more-children.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
 const IMAGE_ID_RE = /^\[image:(.+)\]$/
 
-function nextStepMessage(state: OnboardingState): string {
+// Botão nativo em vez de "digite não pra continuar" — "não" pra seguir em
+// frente é uma instrução confusa (não geralmente significa parar, não seguir).
+// Aceita um prefixo pra juntar com a mensagem anterior (ex: "Foto recebida!")
+// numa mensagem só, em vez de duas seguidas — evita bater no rate limit do
+// WhatsApp de mensagens em sequência pro mesmo número.
+async function sendNextStepPrompt(state: OnboardingState, prefix?: string): Promise<void> {
+  const lead = prefix ? `${prefix}\n\n` : ''
+
   if (state.childrenDone) {
-    return `✅ ${state.children.length} filho(s) cadastrado(s)!`
+    await sendText(state.phone, `${lead}✅ ${state.children.length} filho(s) cadastrado(s)!`)
+    return
   }
   const max = maxChildrenForPlan(state.plan)
-  return `Quer adicionar outro filho? (${state.children.length}/${max})\nMande o *nome* ou *não* para continuar:`
+  await sendButtons(
+    state.phone,
+    `${lead}Quer adicionar outro filho? (${state.children.length}/${max})\nMande o *nome* do próximo, ou toque em "Terminei" pra seguir:`,
+    [CHILDREN_DONE_BUTTON],
+  )
 }
 
 export async function collectChildRegistrationPhotoNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
@@ -31,7 +44,7 @@ export async function collectChildRegistrationPhotoNode(state: OnboardingState):
       return { childRegistrationPhotoInvalid: true }
     }
 
-    await sendText(state.phone, nextStepMessage(state))
+    await sendNextStepPrompt(state)
     return { childRegistrationPhotoInvalid: false }
   }
 
@@ -66,8 +79,7 @@ export async function collectChildRegistrationPhotoNode(state: OnboardingState):
       await saveChildVisualProfile(childId, profile, photoPath)
     }
 
-    await sendText(state.phone, '📸 Foto recebida!')
-    await sendText(state.phone, nextStepMessage(state))
+    await sendNextStepPrompt(state, '📸 Foto recebida!')
 
     return { childRegistrationPhotoInvalid: false }
   } catch {

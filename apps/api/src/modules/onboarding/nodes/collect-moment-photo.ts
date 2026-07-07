@@ -60,8 +60,7 @@ export async function collectMomentPhotoNode(state: OnboardingState): Promise<Pa
       ? await uploadMomentPhoto(currentChildId, base64, mimeType)
       : undefined
 
-    await sendText(state.phone, '📸 Foto recebida! Vou usar pra deixar a ilustração ainda mais especial.')
-    await sendText(state.phone, askMomentText(name))
+    await sendText(state.phone, `📸 Foto recebida! Vou usar pra deixar a ilustração ainda mais especial.\n\n${askMomentText(name)}`)
 
     return { momentPhotoPath: photoPath, momentPhotoInvalid: false }
   } catch {

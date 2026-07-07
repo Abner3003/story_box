@@ -12,28 +12,29 @@ const MENU_OPTIONS = [
   { id: 'menu_family', title: 'Cadastrar família' },
 ]
 
-async function sendMenu(phone: string): Promise<void> {
+async function sendMenu(phone: string, prefix?: string): Promise<void> {
+  const lead = prefix ? `${prefix}\n\n` : ''
+
   if (MENU_OPTIONS.length <= MAX_NATIVE_BUTTONS) {
-    await sendButtons(phone, 'Como posso te ajudar?', MENU_OPTIONS)
+    await sendButtons(phone, `${lead}Como posso te ajudar?`, MENU_OPTIONS)
     return
   }
 
   const list = MENU_OPTIONS.map((opt, i) => `*${i + 1}* - ${opt.title}`).join('\n')
-  await sendText(phone, `Como posso te ajudar?\n\n${list}\n\nDigite ${formatOptionsList(MENU_OPTIONS.length)}:`)
+  await sendText(phone, `${lead}Como posso te ajudar?\n\n${list}\n\nDigite ${formatOptionsList(MENU_OPTIONS.length)}:`)
 }
 
 export async function askMenuNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
+  let prefix: string | undefined
+
   if (state.subscriberId) {
     const book = await getLatestBookForSubscriber(state.subscriberId)
     if (book) {
-      await sendText(
-        state.phone,
-        `Oi${state.subscriberName ? `, ${state.subscriberName}` : ''}! 👋\n\nVi que você já tem um livro criado — status atual: *${describeBookStatus(book.status)}*.`,
-      )
+      prefix = `Oi${state.subscriberName ? `, ${state.subscriberName}` : ''}! 👋\n\nVi que você já tem um livro criado — status atual: *${describeBookStatus(book.status)}*.`
     }
   }
 
-  await sendMenu(state.phone)
+  await sendMenu(state.phone, prefix)
 
   return {}
 }

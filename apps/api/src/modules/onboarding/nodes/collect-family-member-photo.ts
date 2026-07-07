@@ -1,15 +1,21 @@
 import { interrupt } from '@langchain/langgraph'
-import { sendText, downloadMedia } from '../../../lib/whatsapp.js'
+import { sendButtons, sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
 import { createFamilyMember, saveFamilyMemberVisualProfile, uploadFamilyMemberPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
+import { FAMILY_DONE_BUTTON } from './collect-family-member-info.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
 const IMAGE_ID_RE = /^\[image:(.+)\]$/
 
-function nextStepMessage(): string {
-  return 'Quer cadastrar mais alguém? Me diz o *nome e quem é essa pessoa* (ex: "Ana, mamãe"), ou digite *não* pra seguir:'
+async function sendNextStepPrompt(phone: string, prefix?: string): Promise<void> {
+  const lead = prefix ? `${prefix}\n\n` : ''
+  await sendButtons(
+    phone,
+    `${lead}Quer cadastrar mais alguém? Me diz o *nome e quem é essa pessoa* (ex: "Ana, mamãe"), ou toque em "Terminei" pra seguir:`,
+    [FAMILY_DONE_BUTTON],
+  )
 }
 
 export async function collectFamilyMemberPhotoNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
@@ -31,7 +37,7 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
     if (state.subscriberId) {
       await createFamilyMember({ subscriber_id: state.subscriberId, name, role: state.familyMemberDraftRole })
     }
-    await sendText(state.phone, nextStepMessage())
+    await sendNextStepPrompt(state.phone)
     return { familyMemberPhotoInvalid: false, familyMemberDraftName: undefined, familyMemberDraftRole: undefined }
   }
 
@@ -69,8 +75,7 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
       }
     }
 
-    await sendText(state.phone, `📸 ${name} cadastrado(a)!`)
-    await sendText(state.phone, nextStepMessage())
+    await sendNextStepPrompt(state.phone, `📸 ${name} cadastrado(a)!`)
 
     return { familyMemberPhotoInvalid: false, familyMemberDraftName: undefined, familyMemberDraftRole: undefined }
   } catch {

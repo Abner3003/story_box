@@ -156,7 +156,12 @@ const graph = new StateGraph(OnboardingAnnotation)
     return state.familyMemberPhotoInvalid ? 'collect_family_member_photo' : 'collect_family_member_info'
   })
 
-  .addEdge('ask_photo',            'collect_photo')
+  .addConditionalEdges('ask_photo', (state) => {
+    if (state.photoAlreadyOnFile) {
+      return state.photoQueueIndex < state.featuredChildIndices.length ? 'ask_photo' : 'ask_story'
+    }
+    return 'collect_photo'
+  })
   .addConditionalEdges('collect_photo', (state) => {
     const edit = editRoute(state)
     if (edit) return edit

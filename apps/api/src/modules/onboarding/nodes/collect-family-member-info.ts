@@ -1,7 +1,9 @@
 import { interrupt } from '@langchain/langgraph'
-import { sendText } from '../../../lib/whatsapp.js'
+import { sendButtons, sendText } from '../../../lib/whatsapp.js'
 import { checkEditIntent } from '../edit-intent.js'
 import type { OnboardingState } from '../onboarding.state.js'
+
+export const FAMILY_DONE_BUTTON = { id: 'family_done', title: 'Terminei' }
 
 // Espera "Nome, papel" (ex: "Ana, mamãe") — se só vier o nome, o papel fica
 // em branco (não é obrigatório, só ajuda o prompt de ilustração).
@@ -19,7 +21,7 @@ export async function collectFamilyMemberInfoNode(state: OnboardingState): Promi
   const raw = interrupt<string>('awaiting_family_member_info')
   const trimmed = raw.trim()
 
-  if (/^n(ão|ao)?$/i.test(trimmed)) {
+  if (/^n(ão|ao)?$/i.test(trimmed) || trimmed === FAMILY_DONE_BUTTON.id) {
     if (!state.familyMembersDone) {
       await sendText(state.phone, '✅ Combinado! Vamos seguir.')
     }
@@ -31,7 +33,11 @@ export async function collectFamilyMemberInfoNode(state: OnboardingState): Promi
 
   const parsed = parseNameAndRole(trimmed)
   if (!parsed) {
-    await sendText(state.phone, '❌ Não entendi. Manda assim: *Nome, papel* (ex: "Ana, mamãe"), ou digite *não* pra pular:')
+    await sendButtons(
+      state.phone,
+      '❌ Não entendi. Manda assim: *Nome, papel* (ex: "Ana, mamãe"), ou toque em "Terminei" pra seguir:',
+      [FAMILY_DONE_BUTTON],
+    )
     return { familyMemberInfoInvalid: true }
   }
 

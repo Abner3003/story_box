@@ -4,6 +4,7 @@ import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
 import { createFamilyMember, saveFamilyMemberVisualProfile, uploadFamilyMemberPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
+import { looksLikeStrayMediaMessage } from '../../../lib/message-tags.js'
 import { FAMILY_DONE_BUTTON } from './collect-family-member-info.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
@@ -28,7 +29,17 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
     const edit = await checkEditIntent(raw, 'collect_family_member_photo')
     if (edit) return edit
 
-    if (!/^n(ão|ao)?$/i.test(raw.trim())) {
+    const trimmed = raw.trim()
+
+    if (looksLikeStrayMediaMessage(trimmed)) {
+      await sendText(
+        state.phone,
+        '❌ Não entendi. Manda a foto ou digite *não* pra pular:',
+      )
+      return { familyMemberPhotoInvalid: true }
+    }
+
+    if (!/^n(ão|ao)?$/i.test(trimmed) && trimmed !== FAMILY_DONE_BUTTON.id && trimmed !== FAMILY_DONE_BUTTON.title) {
       await sendText(state.phone, '❌ Não entendi. Manda a foto ou digite *não* pra pular:')
       return { familyMemberPhotoInvalid: true }
     }

@@ -136,8 +136,12 @@ const graph = new StateGraph(OnboardingAnnotation)
     if (state.childRegistrationPhotoInvalid) return 'collect_child_registration_photo'
     return state.childrenDone ? 'ask_child_selection' : 'collect_more_children'
   })
-  .addConditionalEdges('collect_more_children', (state) =>
-    editRoute(state) ?? (state.childrenDone ? 'ask_child_selection' : 'collect_child_birth'))
+  .addConditionalEdges('collect_more_children', (state) => {
+    const edit = editRoute(state)
+    if (edit) return edit
+    if (state.moreChildrenInvalid) return 'collect_more_children'
+    return state.childrenDone ? 'ask_child_selection' : 'collect_child_birth'
+  })
 
   .addConditionalEdges('ask_child_selection', (state) => state.children.length > 1 ? 'collect_child_selection' : 'ask_family_members')
   .addConditionalEdges('collect_child_selection', (state) =>

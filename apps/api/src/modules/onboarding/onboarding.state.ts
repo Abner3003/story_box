@@ -157,6 +157,10 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => false,
   }),
+  moreChildrenInvalid: Annotation<boolean>({
+    reducer: (_, b) => b,
+    default: () => false,
+  }),
   featuredChildIndices: Annotation<number[]>({
     reducer: (_, b) => b,
     default: () => [],

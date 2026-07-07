@@ -1,5 +1,6 @@
 import { interrupt } from '@langchain/langgraph'
 import { sendButtons, sendText } from '../../../lib/whatsapp.js'
+import { looksLikeStrayMediaMessage } from '../../../lib/message-tags.js'
 import { checkEditIntent } from '../edit-intent.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
@@ -21,7 +22,15 @@ export async function collectFamilyMemberInfoNode(state: OnboardingState): Promi
   const raw = interrupt<string>('awaiting_family_member_info')
   const trimmed = raw.trim()
 
-  if (/^n(ão|ao)?$/i.test(trimmed) || trimmed === FAMILY_DONE_BUTTON.id) {
+  if (looksLikeStrayMediaMessage(trimmed)) {
+    await sendText(
+      state.phone,
+      '❌ Não entendi. Me manda o *nome e quem é essa pessoa* (ex: "Ana, mamãe"), ou toque em "Terminei" pra seguir:',
+    )
+    return { familyMemberInfoInvalid: true, familyMembersDone: false }
+  }
+
+  if (/^n(ão|ao)?$/i.test(trimmed) || trimmed === FAMILY_DONE_BUTTON.id || trimmed === FAMILY_DONE_BUTTON.title) {
     if (!state.familyMembersDone) {
       await sendText(state.phone, '✅ Combinado! Vamos seguir.')
     }

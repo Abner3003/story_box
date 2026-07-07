@@ -6,6 +6,10 @@ ENV PATH="${PNPM_HOME}:${PATH}"
 RUN corepack enable
 RUN corepack prepare pnpm@9.15.0 --activate
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./

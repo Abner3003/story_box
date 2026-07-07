@@ -2,6 +2,7 @@ import { interrupt } from '@langchain/langgraph'
 import { sendButtons, sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
+import { normalizeMediaForVision } from '../../../lib/media-frame.js'
 import { createFamilyMember, saveFamilyMemberVisualProfile, uploadFamilyMemberPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import { looksLikeStrayMediaMessage } from '../../../lib/message-tags.js'
@@ -76,12 +77,14 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
       mimeType = media.mimeType
     }
 
+    const normalized = base64 ? await normalizeMediaForVision(base64, mimeType) : { base64, mimeType, source: 'image' as const }
+
     if (state.subscriberId) {
       const memberId = await createFamilyMember({ subscriber_id: state.subscriberId, name, role: state.familyMemberDraftRole })
 
-      if (base64) {
-        const profile = await extractVisualProfile(base64, mimeType)
-        const photoPath = await uploadFamilyMemberPhoto(memberId, base64, mimeType)
+      if (normalized.base64) {
+        const profile = await extractVisualProfile(normalized.base64, normalized.mimeType)
+        const photoPath = await uploadFamilyMemberPhoto(memberId, normalized.base64, normalized.mimeType)
         await saveFamilyMemberVisualProfile(memberId, profile, photoPath)
       }
     }
@@ -89,7 +92,14 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
     await sendNextStepPrompt(state.phone, `📸 ${name} cadastrado(a)!`)
 
     return { familyMemberPhotoInvalid: false, familyMemberDraftName: undefined, familyMemberDraftRole: undefined }
-  } catch {
+  } catch (err) {
+    console.error('[onboarding] failed to process family member photo', {
+      name,
+      hasDraftRole: Boolean(state.familyMemberDraftRole),
+      subscriberId: state.subscriberId,
+      simulate: state.simulate,
+      error: err,
+    })
     await sendText(state.phone, '❌ Não consegui processar a foto. Envie novamente ou digite *não*:')
     return { familyMemberPhotoInvalid: true }
   }

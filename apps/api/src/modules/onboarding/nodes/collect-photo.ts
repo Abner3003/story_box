@@ -2,6 +2,7 @@ import { interrupt } from '@langchain/langgraph'
 import { sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
+import { normalizeMediaForVision } from '../../../lib/media-frame.js'
 import { saveChildVisualProfile, uploadChildPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import type { OnboardingState } from '../onboarding.state.js'
@@ -56,13 +57,14 @@ export async function collectPhotoNode(state: OnboardingState): Promise<Partial<
       mimeType = media.mimeType
     }
 
-    const profile = base64 ? await extractVisualProfile(base64, mimeType) : FALLBACK_PROFILE
+    const normalized = base64 ? await normalizeMediaForVision(base64, mimeType) : { base64, mimeType, source: 'image' as const }
+    const profile = normalized.base64 ? await extractVisualProfile(normalized.base64, normalized.mimeType) : FALLBACK_PROFILE
 
     const currentIndex = state.featuredChildIndices[state.photoQueueIndex]
     const currentChildId = state.childIds[currentIndex]
 
     if (currentChildId) {
-      const photoPath = base64 ? await uploadChildPhoto(currentChildId, base64, mimeType) : undefined
+      const photoPath = normalized.base64 ? await uploadChildPhoto(currentChildId, normalized.base64, normalized.mimeType) : undefined
       // Identidade visual única do produto (estilo Disney) — não existe mais
       // escolha de estilo pela família.
       await saveChildVisualProfile(currentChildId, { ...profile, chosen_style: 'disney' }, photoPath)

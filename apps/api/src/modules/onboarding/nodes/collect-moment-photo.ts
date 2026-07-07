@@ -1,6 +1,7 @@
 import { interrupt } from '@langchain/langgraph'
 import { sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
+import { normalizeMediaForVision } from '../../../lib/media-frame.js'
 import { uploadMomentPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import type { OnboardingState } from '../onboarding.state.js'
@@ -56,8 +57,10 @@ export async function collectMomentPhotoNode(state: OnboardingState): Promise<Pa
       mimeType = media.mimeType
     }
 
-    const photoPath = base64 && currentChildId
-      ? await uploadMomentPhoto(currentChildId, base64, mimeType)
+    const normalized = base64 ? await normalizeMediaForVision(base64, mimeType) : { base64, mimeType, source: 'image' as const }
+
+    const photoPath = normalized.base64 && currentChildId
+      ? await uploadMomentPhoto(currentChildId, normalized.base64, normalized.mimeType)
       : undefined
 
     await sendText(state.phone, `📸 Foto recebida! Vou usar pra deixar a ilustração ainda mais especial.\n\n${askMomentText(name)}`)

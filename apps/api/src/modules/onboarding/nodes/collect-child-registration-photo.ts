@@ -2,6 +2,7 @@ import { interrupt } from '@langchain/langgraph'
 import { sendButtons, sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
+import { normalizeMediaForVision } from '../../../lib/media-frame.js'
 import { saveChildVisualProfile, uploadChildPhoto } from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import { maxChildrenForPlan } from '../max-children.js'
@@ -73,9 +74,11 @@ export async function collectChildRegistrationPhotoNode(state: OnboardingState):
       mimeType = media.mimeType
     }
 
-    if (base64 && childId) {
-      const profile = await extractVisualProfile(base64, mimeType)
-      const photoPath = await uploadChildPhoto(childId, base64, mimeType)
+    const normalized = base64 ? await normalizeMediaForVision(base64, mimeType) : { base64, mimeType, source: 'image' as const }
+
+    if (normalized.base64 && childId) {
+      const profile = await extractVisualProfile(normalized.base64, normalized.mimeType)
+      const photoPath = await uploadChildPhoto(childId, normalized.base64, normalized.mimeType)
       await saveChildVisualProfile(childId, profile, photoPath)
     }
 

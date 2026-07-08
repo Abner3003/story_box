@@ -3,13 +3,32 @@ import { sendButtons, sendText, downloadMedia } from '../../../lib/whatsapp.js'
 import { extractVisualProfile } from '../../../lib/vision.js'
 import { getSimulatedMedia, clearSimulatedMedia } from '../../../lib/simulate-media.js'
 import { normalizeMediaForVision } from '../../../lib/media-frame.js'
-import { createFamilyMember, saveFamilyMemberVisualProfile, uploadFamilyMemberPhoto } from '../onboarding.repository.js'
+import {
+  createFamilyMember,
+  findFamilyMemberBySubscriberAndValue,
+  updateFamilyMemberPhoto,
+} from '../onboarding.repository.js'
 import { checkEditIntent } from '../edit-intent.js'
 import { looksLikeStrayMediaMessage } from '../../../lib/message-tags.js'
 import { FAMILY_DONE_BUTTON } from './collect-family-member-info.js'
 import type { OnboardingState } from '../onboarding.state.js'
 
-const IMAGE_ID_RE = /^\[image:(.+)\]$/
+const IMAGE_ID_RE = /^\[image:(.+?)\](?:\n\n([\s\S]+))?$/
+
+function parseNameAndRole(raw: string): { name: string; role?: string } | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  const [namePart, rolePart] = trimmed.split(',').map((s) => s.trim())
+  if (!namePart) return null
+
+  return { name: namePart, role: rolePart || undefined }
+}
+
+function extractImageCaption(raw: string): string | null {
+  const match = IMAGE_ID_RE.exec(raw.trim())
+  return match?.[2]?.trim() || null
+}
 
 async function sendNextStepPrompt(phone: string, prefix?: string): Promise<void> {
   const lead = prefix ? `${prefix}\n\n` : ''
@@ -21,10 +40,15 @@ async function sendNextStepPrompt(phone: string, prefix?: string): Promise<void>
 }
 
 export async function collectFamilyMemberPhotoNode(state: OnboardingState): Promise<Partial<OnboardingState>> {
-  const raw = interrupt<string>('awaiting_family_member_photo')
-
+  const raw = state.familyMemberPendingMedia ?? interrupt<string>('awaiting_family_member_photo')
   const match = IMAGE_ID_RE.exec(raw)
-  const name = state.familyMemberDraftName ?? 'essa pessoa'
+  const caption = extractImageCaption(raw)
+  const parsedCaption = caption ? parseNameAndRole(caption) : null
+  const name = state.familyMemberDraftName ?? parsedCaption?.name ?? parsedCaption?.role ?? 'essa pessoa'
+  const role = state.familyMemberDraftRole ?? parsedCaption?.role
+  const existingId = state.familyMemberExistingId ?? (
+    state.subscriberId ? (await findFamilyMemberBySubscriberAndValue(state.subscriberId, role ?? name))?.id : undefined
+  )
 
   if (!match) {
     const edit = await checkEditIntent(raw, 'collect_family_member_photo')
@@ -46,11 +70,17 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
     }
 
     // Pulou a foto — ainda cadastra a pessoa só com nome/papel.
-    if (state.subscriberId) {
-      await createFamilyMember({ subscriber_id: state.subscriberId, name, role: state.familyMemberDraftRole })
+    if (state.subscriberId && !existingId) {
+      await createFamilyMember({ subscriber_id: state.subscriberId, name, role })
     }
     await sendNextStepPrompt(state.phone)
-    return { familyMemberPhotoInvalid: false, familyMemberDraftName: undefined, familyMemberDraftRole: undefined }
+    return {
+      familyMemberPhotoInvalid: false,
+      familyMemberDraftName: undefined,
+      familyMemberDraftRole: undefined,
+      familyMemberExistingId: undefined,
+      familyMemberPendingMedia: undefined,
+    }
   }
 
   const mediaId = match[1]
@@ -79,23 +109,30 @@ export async function collectFamilyMemberPhotoNode(state: OnboardingState): Prom
 
     const normalized = base64 ? await normalizeMediaForVision(base64, mimeType) : { base64, mimeType, source: 'image' as const }
 
-    if (state.subscriberId) {
-      const memberId = await createFamilyMember({ subscriber_id: state.subscriberId, name, role: state.familyMemberDraftRole })
+    let memberId = existingId
 
-      if (normalized.base64) {
-        const profile = await extractVisualProfile(normalized.base64, normalized.mimeType)
-        const photoPath = await uploadFamilyMemberPhoto(memberId, normalized.base64, normalized.mimeType)
-        await saveFamilyMemberVisualProfile(memberId, profile, photoPath)
-      }
+    if (!memberId && state.subscriberId) {
+      memberId = await createFamilyMember({ subscriber_id: state.subscriberId, name, role })
+    }
+
+    if (memberId && normalized.base64) {
+      const profile = await extractVisualProfile(normalized.base64, normalized.mimeType)
+      await updateFamilyMemberPhoto(memberId, normalized.base64, normalized.mimeType, profile)
     }
 
     await sendNextStepPrompt(state.phone, `📸 ${name} cadastrado(a)!`)
 
-    return { familyMemberPhotoInvalid: false, familyMemberDraftName: undefined, familyMemberDraftRole: undefined }
+    return {
+      familyMemberPhotoInvalid: false,
+      familyMemberDraftName: undefined,
+      familyMemberDraftRole: undefined,
+      familyMemberExistingId: undefined,
+      familyMemberPendingMedia: undefined,
+    }
   } catch (err) {
     console.error('[onboarding] failed to process family member photo', {
       name,
-      hasDraftRole: Boolean(state.familyMemberDraftRole),
+      hasDraftRole: Boolean(role),
       subscriberId: state.subscriberId,
       simulate: state.simulate,
       error: err,

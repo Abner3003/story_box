@@ -185,6 +185,14 @@ export const OnboardingAnnotation = Annotation.Root({
     reducer: (_, b) => b,
     default: () => undefined,
   }),
+  familyMemberExistingId: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
+  familyMemberPendingMedia: Annotation<string | undefined>({
+    reducer: (_, b) => b,
+    default: () => undefined,
+  }),
   familyMemberInfoInvalid: Annotation<boolean>({
     reducer: (_, b) => b,
     default: () => false,

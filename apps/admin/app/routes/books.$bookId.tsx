@@ -309,8 +309,11 @@ export default function BookReviewRoute() {
               ) : (
                 <div className="page-image-placeholder">Imagem ainda não gerada</div>
               )}
-              <p>{page.text}</p>
-              <p className="muted">{page.illustration_prompt}</p>
+              <p className="page-text">{page.text}</p>
+              <details className="prompt-details">
+                <summary>Prompt da ilustração</summary>
+                <pre className="prompt-preview">{page.illustration_prompt}</pre>
+              </details>
             </article>
           )) ?? <p className="muted">Nenhuma página disponível.</p>}
         </div>

@@ -9,6 +9,7 @@ import { downloadChildPhoto, getFamilyMembersForSubscriber } from '../modules/on
 import { generateImage, type ReferenceImage } from '../lib/illustration.js'
 import { resolveChildReference, resolveFamilyMemberReference } from '../lib/character-reference.js'
 import { assembleBookPdf } from '../lib/pdf.js'
+import { logImagePrompt } from '../lib/prompt-debug.js'
 
 interface RegenPageJobData {
   bookId: string
@@ -63,6 +64,13 @@ const worker = new Worker<RegenPageJobData>(
       : ''
 
     const prompt = buildIllustrationPrompt(scenePrompt, child.name, visualProfile, styleId, familyDescription) + referenceNote
+    logImagePrompt(`book:${bookId}:page:${pageNumber}:regen`, prompt, {
+      bookId,
+      pageNumber,
+      styleId,
+      referenceCount: references.length,
+      familyReferenceCount: familyReferences.length,
+    })
     const base64 = await generateImage(prompt, references)
     const path = await uploadBookAsset(StoragePaths.bookPage(bookId, pageNumber), base64, 'image/png')
 

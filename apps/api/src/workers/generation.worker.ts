@@ -16,6 +16,7 @@ import { generateImage, type ReferenceImage } from '../lib/illustration.js'
 import { assembleBookPdf } from '../lib/pdf.js'
 import { getFamilyMembersForSubscriber, downloadChildPhoto } from '../modules/onboarding/onboarding.repository.js'
 import { resolveChildReference, resolveFamilyMemberReference } from '../lib/character-reference.js'
+import { logImagePrompt } from '../lib/prompt-debug.js'
 
 interface GenerateBookJobData {
   subscriberId: string
@@ -127,6 +128,13 @@ const worker = new Worker<GenerateBookJobData>(
       }
 
       const prompt = buildIllustrationPrompt(page.illustration_prompt, child.name, visualProfile, styleId, familyDescription) + referenceNote
+      logImagePrompt(`book:${book.id}:page:${page.page_number}`, prompt, {
+        childId,
+        collectionId,
+        styleId,
+        referenceCount: references.length,
+        familyReferenceCount: familyReferences.length,
+      })
       const base64 = await generateImage(prompt, references)
       const path = await uploadBookAsset(StoragePaths.bookPage(book.id, page.page_number), base64, 'image/png')
       pagesWithImages.push({ page: { ...page, image_storage_path: path }, imageBuffer: Buffer.from(base64, 'base64') })
@@ -143,6 +151,13 @@ const worker = new Worker<GenerateBookJobData>(
       coverImageBuffer = Buffer.from((await downloadChildPhoto(coverPath)).base64, 'base64')
     } else {
       const coverPrompt = buildCoverPrompt(story.title, child.name, visualProfile, styleId, familyDescription) + referenceNote
+      logImagePrompt(`book:${book.id}:cover`, coverPrompt, {
+        childId,
+        collectionId,
+        styleId,
+        referenceCount: references.length,
+        familyReferenceCount: familyReferences.length,
+      })
       const coverBase64 = await generateImage(coverPrompt, references)
       coverPath = await uploadBookAsset(StoragePaths.bookCover(book.id), coverBase64, 'image/png')
       coverImageBuffer = Buffer.from(coverBase64, 'base64')

@@ -27,7 +27,7 @@ export interface WhatsAppMessage {
   timestamp: string
   type: 'text' | 'image' | 'audio' | 'document' | 'interactive'
   text?: { body: string }
-  image?: { id: string; mime_type: string; sha256: string }
+  image?: { id: string; mime_type: string; sha256: string; caption?: string }
   interactive?: {
     type: string
     button_reply?: { id: string; title: string }

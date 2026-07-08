@@ -26,7 +26,7 @@ export async function handleWhatsAppWebhook(
           : msg.type === 'interactive' && msg.interactive?.button_reply
             ? msg.interactive.button_reply.id
             : msg.type === 'image' && msg.image?.id
-              ? `[image:${msg.image.id}]`
+              ? `[image:${msg.image.id}]${msg.image.caption ? `\n\n${msg.image.caption}` : ''}`
               : `[${msg.type}]`
 
         // A Meta reentrega o mesmo webhook se demorarmos pra responder (ex:

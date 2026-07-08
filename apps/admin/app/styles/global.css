@@ -388,6 +388,48 @@ td {
   text-align: center;
 }
 
+.page-text {
+  margin: 12px 0 10px;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.prompt-details {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(7, 17, 31, 0.42);
+  overflow: hidden;
+}
+
+.prompt-details summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.prompt-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.prompt-preview {
+  margin: 0;
+  padding: 0 14px 14px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+}
+
 .stack {
   display: grid;
   gap: 12px;

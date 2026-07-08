@@ -227,6 +227,58 @@ export async function createFamilyMember(data: { subscriber_id: string; name: st
   return row.id as string
 }
 
+function normalizeFamilyValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+}
+
+export async function findFamilyMemberBySubscriberAndValue(
+  subscriberId: string,
+  value: string,
+): Promise<FamilyMember | null> {
+  const normalized = normalizeFamilyValue(value)
+  if (!normalized) return null
+
+  const db = getSupabaseClient()
+  const { data, error } = await db
+    .from('family_members')
+    .select('*')
+    .eq('subscriber_id', subscriberId)
+  if (error) throw error
+
+  return (data ?? []).find((member) => {
+    const name = normalizeFamilyValue(member.name)
+    const role = member.role ? normalizeFamilyValue(member.role) : ''
+    return name === normalized || role === normalized
+  }) ?? null
+}
+
+export async function updateFamilyMemberPhoto(memberId: string, base64: string, mimeType: string, profile?: VisualProfile) {
+  const db = getSupabaseClient()
+  const path = StoragePaths.familyMemberPhoto(memberId)
+  const buffer = Buffer.from(base64, 'base64')
+
+  const { error: uploadError } = await db.storage
+    .from(ASSETS_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true })
+  if (uploadError) throw uploadError
+
+  const { error: updateError } = await db
+    .from('family_members')
+    .update({
+      ...(profile ? { visual_profile: profile } : {}),
+      photo_storage_path: path,
+    })
+    .eq('id', memberId)
+  if (updateError) throw updateError
+
+  return path
+}
+
 export async function getFamilyMembersForSubscriber(subscriberId: string): Promise<FamilyMember[]> {
   const db = getSupabaseClient()
   const { data, error } = await db
